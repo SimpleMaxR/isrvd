@@ -11,6 +11,10 @@ class ApiService {
     return axios.post('/api/logout')
   }
 
+  getMe() {
+    return axios.get('/api/me')
+  }
+
   // 文件管理相关
   list(path) {
     return axios.post('/api/list', { path })

@@ -3,6 +3,7 @@ package router
 import (
 	"github.com/gin-gonic/gin"
 
+	"isrvd/server/config"
 	"isrvd/server/handler"
 	"isrvd/server/middleware"
 )
@@ -31,23 +32,30 @@ func Setup() *gin.Engine {
 		auth.Use(middleware.Auth())
 		{
 			auth.POST("/logout", authHandler.Logout)
+			auth.GET("/me", authHandler.Me)
 			auth.POST("/list", fileHandler.List)
-			auth.POST("/upload", fileHandler.Upload)
 			auth.POST("/download", fileHandler.Download)
-			auth.POST("/delete", fileHandler.Delete)
-			auth.POST("/mkdir", fileHandler.Mkdir)
-			auth.POST("/create", fileHandler.Create)
 			auth.POST("/read", fileHandler.Read)
-			auth.POST("/modify", fileHandler.Modify)
-			auth.POST("/rename", fileHandler.Rename)
-			auth.POST("/chmod", fileHandler.Chmod)
-			auth.POST("/zip", zipHandler.Zip)
-			auth.POST("/unzip", zipHandler.Unzip)
+
+			// 管理员权限路由
+			admin := auth.Group("")
+			admin.Use(middleware.RequireRole(config.RoleAdmin))
+			{
+				admin.POST("/upload", fileHandler.Upload)
+				admin.POST("/delete", fileHandler.Delete)
+				admin.POST("/mkdir", fileHandler.Mkdir)
+				admin.POST("/create", fileHandler.Create)
+				admin.POST("/modify", fileHandler.Modify)
+				admin.POST("/rename", fileHandler.Rename)
+				admin.POST("/chmod", fileHandler.Chmod)
+				admin.POST("/zip", zipHandler.Zip)
+				admin.POST("/unzip", zipHandler.Unzip)
+			}
 		}
 	}
 
-	// WebSocket 路由
-	r.GET("/ws/shell", shellHandler.HandleWebSocket)
+	// WebSocket 路由 (仅管理员)
+	r.GET("/ws/shell", middleware.Auth(), middleware.RequireRole(config.RoleAdmin), shellHandler.HandleWebSocket)
 
 	return r
 }

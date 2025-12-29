@@ -36,6 +36,8 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
+	resp.Permissions = h.getPermissions(resp.Role)
+
 	helper.RespondSuccess(c, "Login successful", resp)
 }
 
@@ -45,4 +47,41 @@ func (h *AuthHandler) Logout(c *gin.Context) {
 	h.authService.DeleteToken(token)
 
 	helper.RespondSuccess(c, "Logged out successfully", nil)
+}
+
+// 获取当前用户信息
+func (h *AuthHandler) Me(c *gin.Context) {
+	token := helper.GetTokenFromRequest(c)
+	session, exists := h.authService.GetSession(token)
+	if !exists {
+		helper.RespondError(c, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+
+	resp := model.UserInfoResponse{
+		Username:    session.Username,
+		Role:        string(session.Role),
+		Permissions: h.getPermissions(string(session.Role)),
+	}
+
+	helper.RespondSuccess(c, "Get user info successful", resp)
+}
+
+// 用户权限配置
+func (h *AuthHandler) getPermissions(role string) model.Permissions {
+	if role == "admin" {
+		return model.Permissions{
+			CanRead:    true,
+			CanWrite:   true,
+			CanDelete:  true,
+			CanExecute: true,
+		}
+	}
+	// 默认普通用户只有读权限
+	return model.Permissions{
+		CanRead:    true,
+		CanWrite:   true,
+		CanDelete:  true,
+		CanExecute: false,
+	}
 }

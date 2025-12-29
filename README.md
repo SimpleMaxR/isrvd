@@ -29,7 +29,7 @@ chmod +x build.sh && ./build.sh
 ```bash
 export LISTEN_ADDR=":8080"                  # 监听端口
 export BASE_DIRECTORY="/home/data"          # 文件根目录
-export ADMINISTRATORS="admin:pass,user:123" # 管理员配置
+export ADMINISTRATORS="admin:pass,user:123:user" # 管理员配置 (格式: user:pass[:role])
 
 ./isrvd
 ```

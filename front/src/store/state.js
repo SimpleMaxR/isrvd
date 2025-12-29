@@ -11,6 +11,13 @@ export const initProvider = () => {
         // 用户认证状态
         token: null,
         username: null,
+        role: null,
+        permissions: {
+            canRead: false,
+            canWrite: false,
+            canDelete: false,
+            canExecute: false
+        },
 
         // 网络请求状态
         loading: false,
@@ -28,15 +35,30 @@ export const initProvider = () => {
         setAuth(data) {
             state.token = data.token
             state.username = data.username
+            state.role = data.role
+            if (data.permissions) {
+                state.permissions = data.permissions
+                localStorage.setItem('app-permissions', JSON.stringify(data.permissions))
+            }
             localStorage.setItem('app-token', data.token)
             localStorage.setItem('app-username', data.username)
+            localStorage.setItem('app-role', data.role)
         },
 
         clearAuth() {
             state.token = null
             state.username = null
+            state.role = null
+            state.permissions = {
+                canRead: false,
+                canWrite: false,
+                canDelete: false,
+                canExecute: false
+            }
             localStorage.removeItem('app-token')
             localStorage.removeItem('app-username')
+            localStorage.removeItem('app-role')
+            localStorage.removeItem('app-permissions')
         },
 
         // 文件操作

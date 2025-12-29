@@ -23,7 +23,7 @@ const goHome = () => {
         <i class="fas fa-folder-open me-2"></i> Isrvd
       </a>
 
-      <div v-if="state.username" class="navbar-nav me-auto">
+      <div v-if="state.username && state.permissions.canExecute" class="navbar-nav me-auto">
         <a class="nav-link" href="#" @click="shellModalRef.show">
           <i class="fas fa-terminal me-1"></i> 终端
         </a>

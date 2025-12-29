@@ -49,6 +49,11 @@ actions.loadFiles('/');
       <p class="mt-3 text-muted">加载中...</p>
     </div>
 
+    <div v-else-if="!state.permissions.canRead" class="text-center p-4">
+      <i class="fas fa-lock fa-3x text-secondary mb-3"></i>
+      <p class="text-muted">您没有权限查看文件列表</p>
+    </div>
+
     <div v-else class="table-responsive">
       <table class="table table-hover">
         <thead class="table-light">
@@ -64,7 +69,7 @@ actions.loadFiles('/');
           <tr v-for="file in files" :key="file.name">
             <td>
               <i :class="getFileIcon(file)" class="me-2"></i>
-              <a v-if="file.isDir" href="#" @click="navigateTo(file.path)" class="text-decoration-none">
+              <a v-if="file.isDir && state.permissions.canRead" href="#" @click="navigateTo(file.path)" class="text-decoration-none">
                 {{ file.name }}
               </a>
               <span v-else>{{ file.name }}</span>
@@ -80,33 +85,35 @@ actions.loadFiles('/');
             <td class="text-end">
               <!-- 目录操作 -->
               <template v-if="file.isDir">
-                <button class="btn btn-outline-primary btn-sm me-1" @click="navigateTo(file.path)" title="进入目录">
+                <button v-if="state.permissions.canRead" class="btn btn-outline-primary btn-sm me-1" @click="navigateTo(file.path)" title="进入目录">
                   <i class="fas fa-folder-open"></i>
                 </button>
-                <button class="btn btn-outline-secondary btn-sm me-1" @click="zipModalRef.show(file)" title="打包目录">
+                <button v-if="state.permissions.canWrite" class="btn btn-outline-secondary btn-sm me-1" @click="zipModalRef.show(file)" title="打包目录">
                   <i class="fas fa-file-archive"></i>
                 </button>
               </template>
               <!-- 文件操作 -->
               <template v-else>
-                <button class="btn btn-outline-success btn-sm me-1" @click="download(file)" title="下载">
+                <button v-if="state.permissions.canRead" class="btn btn-outline-success btn-sm me-1" @click="download(file)" title="下载">
                   <i class="fas fa-download"></i>
                 </button>
-                <button v-if="isEditableFile(file)" class="btn btn-outline-info btn-sm me-1" @click="modifyModalRef.show(file)" title="编辑">
+                <button v-if="state.permissions.canWrite && isEditableFile(file)" class="btn btn-outline-info btn-sm me-1" @click="modifyModalRef.show(file)" title="编辑">
                   <i class="fas fa-edit"></i>
                 </button>
-                <button v-if="file.name.endsWith('.zip')" class="btn btn-outline-warning btn-sm me-1" @click="unzipModalRef.show(file)" title="解压">
+                <button v-if="state.permissions.canWrite && file.name.endsWith('.zip')" class="btn btn-outline-warning btn-sm me-1" @click="unzipModalRef.show(file)" title="解压">
                   <i class="fas fa-expand-arrows-alt"></i>
                 </button>
               </template>
               <!-- 通用操作 -->
-              <button class="btn btn-outline-dark btn-sm me-1" @click="renameModalRef.show(file)" title="重命名">
-                <i class="fas fa-pen"></i>
-              </button>
-              <button class="btn btn-outline-secondary btn-sm me-1" @click="chmodModalRef.show(file)" title="权限">
-                <i class="fas fa-key"></i>
-              </button>
-              <button class="btn btn-outline-danger btn-sm" @click="deleteModalRef.show(file)" title="删除">
+              <template v-if="state.permissions.canWrite">
+                <button class="btn btn-outline-dark btn-sm me-1" @click="renameModalRef.show(file)" title="重命名">
+                  <i class="fas fa-pen"></i>
+                </button>
+                <button class="btn btn-outline-secondary btn-sm me-1" @click="chmodModalRef.show(file)" title="权限">
+                  <i class="fas fa-key"></i>
+                </button>
+              </template>
+              <button v-if="state.permissions.canDelete" class="btn btn-outline-danger btn-sm" @click="deleteModalRef.show(file)" title="删除">
                 <i class="fas fa-trash"></i>
               </button>
             </td>

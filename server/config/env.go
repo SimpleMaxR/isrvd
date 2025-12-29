@@ -20,9 +20,32 @@ func init() {
 	if value := os.Getenv("ADMINISTRATORS"); value != "" {
 		delete(Administrators, "admin") // 删除默认用户
 		for _, pair := range strings.Split(value, ",") {
-			kv := strings.SplitN(pair, ":", 2)
-			if len(kv) == 2 {
-				Administrators[kv[0]] = kv[1]
+			parts := strings.Split(pair, ":")
+			if len(parts) >= 2 {
+				username := parts[0]
+				password := parts[1]
+				role := RoleUser // 默认为普通用户
+
+				// 如果用户名为 admin，默认为管理员
+				if username == "admin" {
+					role = RoleAdmin
+				}
+
+				if len(parts) >= 3 {
+					switch Role(parts[2]) {
+					case RoleAdmin:
+						role = RoleAdmin
+					case RoleUser:
+						role = RoleUser
+					default:
+						role = RoleUser // 未知角色降级为普通用户
+					}
+				}
+
+				Administrators[username] = User{
+					Password: password,
+					Role:     role,
+				}
 			}
 		}
 	}
