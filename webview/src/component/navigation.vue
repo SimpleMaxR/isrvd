@@ -1,8 +1,8 @@
 <script lang="ts">
 import { Component, Inject, Prop, Vue, Watch, toNative } from 'vue-facing-decorator'
 
-import { APP_STATE_KEY, APP_ACTIONS_KEY } from '@/store/state'
-import type { AppState, AppActions } from '@/store/state'
+import type { AppActions, AppState } from '@/store/state'
+import { APP_ACTIONS_KEY, APP_STATE_KEY } from '@/store/state'
 
 @Component({
     expose: ['toggleMobileSidebar', 'closeMobileSidebar', 'openMobileSidebar'],
@@ -228,6 +228,14 @@ export default toNative(NavigationBar)
             >
               <i class="fas fa-route"></i>
               <span>路由</span>
+            </router-link>
+            <router-link
+              to="/apisix/upstreams"
+              class="flex items-center gap-3 px-3 py-3 text-sm font-medium text-slate-600 rounded-xl transition-all duration-200 hover:bg-slate-100 hover:text-slate-900"
+              :class="{ 'bg-blue-50 text-blue-700 hover:bg-blue-100': isActive('/apisix/upstream') }"
+            >
+              <i class="fas fa-diagram-project"></i>
+              <span>上游</span>
             </router-link>
             <router-link
               to="/apisix/consumers"

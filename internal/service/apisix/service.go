@@ -145,6 +145,35 @@ func (s *Service) ListUpstreams() (any, error) {
 	return s.client.ListUpstreams()
 }
 
+// GetUpstream 获取单个 Upstream 详情
+func (s *Service) GetUpstream(upstreamID string) (any, error) {
+	if upstreamID == "" {
+		return nil, fmt.Errorf("Upstream ID 不能为空")
+	}
+	return s.client.GetUpstream(upstreamID)
+}
+
+// CreateUpstream 创建 Upstream，保持 APISIX 配置开放透传
+func (s *Service) CreateUpstream(req map[string]any) (any, error) {
+	return s.client.CreateUpstream(req)
+}
+
+// UpdateUpstream 更新 Upstream，保持 APISIX 配置开放透传
+func (s *Service) UpdateUpstream(upstreamID string, req map[string]any) (any, error) {
+	if upstreamID == "" {
+		return nil, fmt.Errorf("Upstream ID 不能为空")
+	}
+	return s.client.UpdateUpstream(upstreamID, req)
+}
+
+// DeleteUpstream 删除 Upstream
+func (s *Service) DeleteUpstream(upstreamID string) error {
+	if upstreamID == "" {
+		return fmt.Errorf("Upstream ID 不能为空")
+	}
+	return s.client.DeleteUpstream(upstreamID)
+}
+
 // ListPlugins 获取可用插件列表
 func (s *Service) ListPlugins() (any, error) {
 	return s.client.ListPlugins()

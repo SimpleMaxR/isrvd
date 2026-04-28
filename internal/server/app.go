@@ -142,6 +142,7 @@ func (app *App) setupRouter() {
 			ar.GET("/plugin_configs", app.apisixListPluginConfigs)
 			ar.GET("/plugins", app.apisixListPlugins)
 			ar.GET("/upstreams", app.apisixListUpstreams)
+			ar.GET("/upstream/:id", app.apisixGetUpstream)
 			ar.GET("/whitelist", app.apisixGetWhitelist)
 		}
 		// Apisix 读写
@@ -152,6 +153,9 @@ func (app *App) setupRouter() {
 			aw.PUT("/route/:id", app.apisixUpdateRoute)
 			aw.PATCH("/route/:id/status", app.apisixPatchRouteStatus)
 			aw.DELETE("/route/:id", app.apisixDeleteRoute)
+			aw.POST("/upstreams", app.apisixCreateUpstream)
+			aw.PUT("/upstream/:id", app.apisixUpdateUpstream)
+			aw.DELETE("/upstream/:id", app.apisixDeleteUpstream)
 			aw.POST("/consumers", app.apisixCreateConsumer)
 			aw.PUT("/consumer/:username", app.apisixUpdateConsumer)
 			aw.DELETE("/consumer/:username", app.apisixDeleteConsumer)

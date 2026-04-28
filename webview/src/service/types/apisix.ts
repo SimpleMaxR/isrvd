@@ -32,6 +32,12 @@ export interface ApisixRouteUpstreamFormNode {
     weight: number
 }
 
+export interface ApisixUpstreamFormNode {
+    host: string
+    port: string
+    weight: number
+}
+
 export interface ApisixRouteUpstreamModeCard {
     value: ApisixRouteUpstreamMode
     title: string
@@ -88,7 +94,7 @@ export interface ApisixPluginConfig {
     update_time: number
 }
 
-export interface ApisixUpstream {
+export interface ApisixUpstream extends ApisixUpstreamConfig {
     id: string
     name: string
     desc: string
@@ -96,6 +102,16 @@ export interface ApisixUpstream {
     create_time: number
     update_time: number
 }
+
+export interface ApisixUpstreamDetail extends ApisixUpstreamConfig {
+    id?: string
+    name?: string
+    desc?: string
+    create_time?: number
+    update_time?: number
+}
+
+export type ApisixUpstreamPayload = Record<string, unknown>
 
 export interface ApisixRevokeWhitelistRequest {
     routeId: string

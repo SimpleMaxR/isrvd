@@ -1,23 +1,33 @@
+import { normalizeUpstreamDTO } from '@/helper/apisix'
 import type { AxiosRequestConfig } from 'axios'
 import { http, httpBlob } from './axios'
 import type {
+    ApisixConsumer, ApisixCreateConsumerRequest,
+    ApisixPluginConfig,
+    ApisixRoute,
+    ApisixUpdateConsumerRequest,
+    ApisixUpstream, ApisixUpstreamDetail, ApisixUpstreamPayload,
+    AuthInfoResponse,
+    AuthLoginResponse,
+    ComposeDeployResult,
     DockerContainerCreateRequest,
     DockerContainerInfo, DockerContainerStatsResponse,
     DockerImageInfo, DockerImageInspectResponse, DockerImageSearchResult,
-    DockerNetworkInfo, DockerNetworkInspectResponse, DockerNetworkCreateRequest,
-    DockerVolumeInfo, DockerVolumeInspectResponse, DockerVolumeCreateRequest,
+    DockerInfo,
+    DockerNetworkCreateRequest,
+    DockerNetworkInfo, DockerNetworkInspectResponse,
     DockerRegistryInfo, DockerRegistryUpsertRequest,
-    SwarmInfo, SwarmNodeDTO, SwarmNodeInspect,
-    SwarmServiceInfo, SwarmServiceDetail, SwarmTask,
-    SwarmCreateServiceRequest,
-    ApisixRoute, ApisixConsumer, ApisixCreateConsumerRequest, ApisixUpdateConsumerRequest,
-    ApisixPluginConfig, ApisixUpstream,
-    SystemProbeResponse, DockerInfo,
+    DockerVolumeCreateRequest,
+    DockerVolumeInfo, DockerVolumeInspectResponse,
     FilerListResponse, FilerReadResponse,
-    AuthLoginResponse, AuthInfoResponse,
+    SwarmCreateServiceRequest,
+    SwarmInfo, SwarmNodeDTO, SwarmNodeInspect,
+    SwarmServiceDetail,
+    SwarmServiceInfo,
+    SwarmTask,
     SystemAllSettings,
     SystemMemberInfo, SystemMemberUpsertRequest,
-    ComposeDeployResult,
+    SystemProbeResponse,
     SystemStat
 } from './types'
 
@@ -332,6 +342,24 @@ class ApiService {
 
     apisixListUpstreams() {
         return http.get<ApisixUpstream[]>('/api/apisix/upstreams')
+    }
+
+    async apisixGetUpstream(id: string) {
+        const res = await http.get<ApisixUpstreamDetail>(`/api/apisix/upstream/${id}`)
+        if (res.payload) res.payload = normalizeUpstreamDTO(res.payload)
+        return res
+    }
+
+    apisixCreateUpstream(data: ApisixUpstreamPayload) {
+        return http.post('/api/apisix/upstreams', data)
+    }
+
+    apisixUpdateUpstream(id: string, data: ApisixUpstreamPayload) {
+        return http.put(`/api/apisix/upstream/${id}`, data)
+    }
+
+    apisixDeleteUpstream(id: string) {
+        return http.delete<void>(`/api/apisix/upstream/${id}`)
     }
 
     apisixListPlugins() {

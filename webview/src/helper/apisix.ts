@@ -3,9 +3,12 @@ import type {
     ApisixRouteUpstreamFormNode,
     ApisixRouteUpstreamMode,
     ApisixUpstreamConfig,
+    ApisixUpstreamDetail,
+    ApisixUpstreamFormNode,
     ApisixUpstreamHashOn,
-    ApisixUpstreamType,
-    ApisixUpstreamNode
+    ApisixUpstreamNode,
+    ApisixUpstreamPayload,
+    ApisixUpstreamType
 } from '@/service/types'
 
 const parseNodeKey = (key: string): ApisixUpstreamNode => {
@@ -67,6 +70,12 @@ export const normalizeUpstreamFormNodes = (upstream?: ApisixUpstreamConfig): Api
 
     return nodes.length > 0 ? nodes : [{ host: '', port: '', weight: 1 }]
 }
+
+export const normalizeUpstreamDTO = (upstream: ApisixUpstreamDetail): ApisixUpstreamDetail => ({
+    ...upstream,
+    type: normalizeUpstreamType(String(upstream.type || '')),
+    nodes: normalizeUpstreamNodes(upstream)
+})
 
 export const detectRouteUpstreamMode = (route?: Pick<ApisixRoute, 'upstream_id' | 'upstream'>): ApisixRouteUpstreamMode => {
     if (route?.upstream_id) return 'upstream_id'
@@ -197,4 +206,85 @@ export const buildRoutePayload = (formData: RouteFormData, baseUpstream?: Apisix
     }
 
     return payload
+}
+
+interface UpstreamFormData {
+    name: string
+    desc: string
+    type: ApisixUpstreamType
+    nodes: ApisixUpstreamFormNode[]
+    hash_on?: ApisixUpstreamHashOn
+    key?: string
+}
+
+export const buildUpstreamPayload = (formData: UpstreamFormData, baseUpstream?: ApisixUpstreamDetail | null): ApisixUpstreamPayload => {
+    const nodes = formData.nodes
+        .map(node => {
+            const host = node.host.trim()
+            const port = String(node.port).trim()
+            if (!host || !port) return null
+            return {
+                host,
+                port: Number(port),
+                weight: Number(node.weight) >= 0 ? Number(node.weight) : 1
+            }
+        })
+        .filter((node): node is { host: string; port: number; weight: number } => Boolean(node))
+
+    const payload: ApisixUpstreamPayload = {
+        ...(baseUpstream || {}),
+        name: formData.name.trim(),
+        desc: formData.desc.trim(),
+        type: formData.type,
+        nodes
+    }
+
+    if (formData.type === 'chash') {
+        payload.hash_on = formData.hash_on || 'vars'
+        payload.key = formData.key?.trim() || 'remote_addr'
+    } else {
+        delete payload.hash_on
+        delete payload.key
+    }
+
+    delete payload.id
+    delete payload.create_time
+    delete payload.update_time
+    return payload
+}
+
+export const UPSTREAM_TYPE_OPTIONS: Array<{ value: ApisixUpstreamType; label: string; desc: string }> = [
+    { value: 'roundrobin', label: 'roundrobin', desc: '按权重轮询分配请求' },
+    { value: 'least_conn', label: 'least_conn', desc: '优先选择当前连接数更少的节点' },
+    { value: 'ewma', label: 'ewma', desc: '根据历史延迟动态选择更快的节点' },
+    { value: 'chash', label: 'chash', desc: '一致性哈希，适合会话粘性场景' },
+]
+
+export const HASH_ON_OPTIONS: Array<{ value: ApisixUpstreamHashOn; label: string; keyPlaceholder: string; keyHint: string }> = [
+    { value: 'vars', label: 'vars（Nginx 变量）', keyPlaceholder: 'remote_addr', keyHint: 'Nginx 变量名，不带 $ 前缀，如 remote_addr、uri' },
+    { value: 'header', label: 'header（请求头）', keyPlaceholder: 'X-User-Id', keyHint: '请求头名称，如 X-User-Id' },
+    { value: 'cookie', label: 'cookie', keyPlaceholder: 'session_id', keyHint: 'Cookie 名称（大小写敏感），如 session_id' },
+    { value: 'consumer', label: 'consumer（消费者）', keyPlaceholder: 'consumer_name', keyHint: '通常填 consumer_name，由 APISIX 自动注入' },
+    { value: 'vars_combinations', label: 'vars_combinations', keyPlaceholder: '$remote_addr$uri', keyHint: '多个 Nginx 变量组合，如 $remote_addr$uri' },
+]
+
+export const validateUpstreamNodes = (
+    nodes: ApisixUpstreamFormNode[],
+    upstreamType?: ApisixUpstreamType,
+    hashKey?: string
+): string => {
+    if (!nodes.some(n => n.host.trim() && String(n.port).trim())) {
+        return '请至少配置一个完整的上游节点'
+    }
+    for (const [i, node] of nodes.entries()) {
+        const hasHost = !!node.host.trim()
+        const hasPort = !!String(node.port).trim()
+        if (hasHost !== hasPort) return `第 ${i + 1} 个节点的主机和端口需要同时填写`
+        if (hasPort && !/^\d+$/.test(String(node.port).trim())) return `第 ${i + 1} 个节点端口必须为数字`
+        if ((hasHost || hasPort) && Number(node.weight) < 0) return `第 ${i + 1} 个节点权重不能为负数`
+    }
+    if (upstreamType === 'chash' && !hashKey?.trim()) {
+        return '使用 chash 策略时，哈希键（key）不能为空'
+    }
+    return ''
 }
