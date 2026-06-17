@@ -41,7 +41,7 @@ func AuthMiddleware(routeIndex map[string]Route, svc *svcAccount.Service) gin.Ha
 }
 
 // PermMiddleware 权限验证中间件
-// 基于 METHOD+PATH 进行集中式权限校验
+// 基于稳定权限 ID 进行校验，兼容旧 "METHOD /api/path" 格式
 func PermMiddleware(routeIndex map[string]Route, svc *svcAccount.Service) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		path := c.FullPath()
@@ -64,7 +64,7 @@ func PermMiddleware(routeIndex map[string]Route, svc *svcAccount.Service) gin.Ha
 		// 仅 AccessPerm 且声明了 Module 的路由才执行细粒度权限校验；
 		// AccessAuth 路由登录即可访问，无需 PermCheck。
 		if route.Access == AccessPerm && route.Module != "" {
-			if err := svc.PermCheck(c.GetString("username"), route.Label, c.Request.Method, path); err != nil {
+			if err := svc.PermCheck(c.GetString("username"), route.Label, route.Permission, route.Key); err != nil {
 				respondError(c, http.StatusForbidden, err.Error())
 				c.Abort()
 				return

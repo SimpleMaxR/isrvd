@@ -38,7 +38,8 @@ type MemberInfo struct {
 	HomeDirectory string                  `json:"homeDirectory"`       // 家目录（绝对路径）
 	Founder       bool                    `json:"founder"`             // 是否为创始人（不可删除/修改）
 	Description   string                  `json:"description"`         // 成员描述
-	Permissions   []string                `json:"permissions"`         // 权限列表
+	Roles         []string                `json:"roles"`               // 成员角色列表
+	Permissions   []string                `json:"permissions"`         // 权限列表（稳定权限 ID 或兼容旧格式）
 	TwoFactor     *config.TwoFactorConfig `json:"twoFactor,omitempty"` // 二步验证配置
 }
 
@@ -51,17 +52,22 @@ func (s *Service) MemberList() []*MemberInfo {
 	return list
 }
 
-// memberInfoBuild 从配置构建成员信息（确保权限不为 nil）
+// memberInfoBuild 从配置构建成员信息（确保角色和权限不为 nil）
 func (s *Service) memberInfoBuild(m *config.MemberConfig) *MemberInfo {
 	perms := m.Permissions
 	if perms == nil {
 		perms = []string{}
+	}
+	roles := m.Roles
+	if roles == nil {
+		roles = []string{}
 	}
 	return &MemberInfo{
 		Username:      m.Username,
 		HomeDirectory: m.HomeDirectory,
 		Founder:       m.Founder,
 		Description:   m.Description,
+		Roles:         roles,
 		Permissions:   perms,
 		TwoFactor:     m.TwoFactor,
 	}
@@ -89,7 +95,8 @@ type MemberUpsertRequest struct {
 	Password      string   `json:"password"`      // 密码（创建时必填，更新时为空则保留原密码）
 	HomeDirectory string   `json:"homeDirectory"` // 家目录（绝对路径或基于 RootDirectory 的相对路径）
 	Description   string   `json:"description"`   // 成员描述
-	Permissions   []string `json:"permissions"`   // 权限列表
+	Roles         []string `json:"roles"`         // 成员角色列表
+	Permissions   []string `json:"permissions"`   // 权限列表（稳定权限 ID 或兼容旧格式）
 }
 
 // MemberCreate 新建成员
@@ -117,6 +124,7 @@ func (s *Service) MemberCreate(req MemberUpsertRequest) error {
 		Password:      hashedPassword,
 		HomeDirectory: home,
 		Description:   req.Description,
+		Roles:         req.Roles,
 		Permissions:   req.Permissions,
 	}
 	if err := config.Save(); err != nil {
@@ -153,6 +161,7 @@ func (s *Service) MemberUpdate(username string, req MemberUpsertRequest) error {
 
 	member.HomeDirectory = home
 	member.Description = req.Description
+	member.Roles = req.Roles
 	member.Permissions = req.Permissions
 
 	if err := config.Save(); err != nil {
@@ -178,6 +187,32 @@ func (s *Service) MemberDelete(username string) error {
 	}
 	logman.Info("Member deleted", "username", username)
 	return nil
+}
+
+// ─── 角色查询 ──────────
+
+// RoleInfo 角色信息（对外展示）
+type RoleInfo struct {
+	Name        string   `json:"name"`        // 角色名称
+	Description string   `json:"description"` // 角色描述
+	Permissions []string `json:"permissions"` // 包含的权限列表
+}
+
+// RoleList 列出所有角色定义
+func (s *Service) RoleList() []*RoleInfo {
+	list := make([]*RoleInfo, 0, len(config.Roles))
+	for _, r := range config.Roles {
+		perms := r.Permissions
+		if perms == nil {
+			perms = []string{}
+		}
+		list = append(list, &RoleInfo{
+			Name:        r.Name,
+			Description: r.Description,
+			Permissions: perms,
+		})
+	}
+	return list
 }
 
 // ─── 密码修改 ──────────

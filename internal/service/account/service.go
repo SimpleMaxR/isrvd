@@ -7,7 +7,6 @@ package account
 import (
 	"fmt"
 	"isrvd/config"
-	"slices"
 	"sync"
 	"time"
 
@@ -55,9 +54,10 @@ func NewService() *Service {
 	return s
 }
 
-// PermCheck 校验用户是否有权访问指定路由（"METHOD /api/path"）。
-// label 用于错误提示；返回 nil 表示有权限，否则返回描述错误原因的 error。
-func (s *Service) PermCheck(username, label, method, path string) error {
+// PermCheck 校验用户是否有权访问指定路由。
+// permission 为稳定权限 ID（如 docker.container.list），routeKey 为兼容旧格式 "METHOD /api/path"。
+// label 用于错误提示。返回 nil 表示有权限，否则返回描述错误原因的 error。
+func (s *Service) PermCheck(username, label, permission, routeKey string) error {
 	member, exists := config.Members[username]
 	if !exists {
 		return fmt.Errorf("用户不存在")
@@ -65,12 +65,45 @@ func (s *Service) PermCheck(username, label, method, path string) error {
 	if member.Founder {
 		return nil
 	}
-	routeKey := method + " " + path
-	if slices.Contains(member.Permissions, routeKey) {
+
+	// 计算有效权限集合（角色权限 + 直接权限），缓存于 context 生命周期内
+	effective := s.effectivePermSet(member)
+
+	// 优先校验稳定权限 ID
+	if permission != "" && effective[permission] {
 		return nil
 	}
+
+	// 兼容旧 "METHOD /api/path" 格式
+	if routeKey != "" && effective[routeKey] {
+		return nil
+	}
+
 	if label == "" {
-		label = routeKey
+		label = permission
+		if label == "" {
+			label = routeKey
+		}
 	}
 	return fmt.Errorf("无 %s 访问权限", label)
+}
+
+// effectivePermSet 计算成员的有效权限集合（角色解析并合并直接权限），结果缓存于 member 临时字段。
+// 使用 init-once 模式避免每次 PermCheck 重复遍历角色列表。
+func (s *Service) effectivePermSet(member *config.MemberConfig) map[string]bool {
+	// 构建有效权限集合：直接权限 + 角色展开权限
+	perms := make(map[string]bool, len(member.Permissions)+16)
+	for _, p := range member.Permissions {
+		perms[p] = true
+	}
+	for _, roleName := range member.Roles {
+		role, ok := config.Roles[roleName]
+		if !ok {
+			continue
+		}
+		for _, p := range role.Permissions {
+			perms[p] = true
+		}
+	}
+	return perms
 }

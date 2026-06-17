@@ -31,6 +31,7 @@ class Members extends Vue {
             (m.username || '').toLowerCase().includes(keyword) ||
             (m.description || '').toLowerCase().includes(keyword) ||
             (m.homeDirectory || '').toLowerCase().includes(keyword) ||
+            (m.roles || []).join(' ').toLowerCase().includes(keyword) ||
             (m.permissions || []).join(' ').toLowerCase().includes(keyword)
         )
     }
@@ -158,14 +159,14 @@ export default toNative(Members)
           <thead>
             <tr class="bg-slate-50 border-b border-slate-200">
               <th class="th">用户名</th>
-              <th class="th">家目录</th>
+              <th class="th">角色</th>
               <th class="th">权限</th>
               <th class="w-28 th-right">操作</th>
             </tr>
           </thead>
           <tbody class="bg-white divide-y divide-slate-100">
             <tr v-for="m in filteredMembers" :key="m.username" class="hover:bg-slate-50 transition-colors">
-              <td class="px-4 py-3 max-w-[280px]">
+              <td class="px-4 py-3 max-w-[250px]">
                 <div class="flex items-center gap-2 min-w-0">
                   <div class="row-icon bg-blue-500">
                     <i class="fas fa-user text-white text-sm"></i>
@@ -176,8 +177,13 @@ export default toNative(Members)
                   </div>
                 </div>
               </td>
-              <td class="px-4 py-3">
-                <code class="text-xs text-slate-600 font-mono">{{ m.homeDirectory }}</code>
+              <td class="px-4 py-3 text-sm text-slate-600">
+                <template v-if="m.founder"><span class="inline-flex items-center rounded-full bg-violet-50 px-2 py-0.5 text-xs text-violet-600"><i class="fas fa-crown mr-1"></i>创始人</span></template>
+                <template v-else-if="m.roles && m.roles.length > 0">
+                  <span class="inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-xs text-blue-600 mr-1" v-for="(role, idx) in m.roles.slice(0, 2)" :key="idx">{{ role }}</span>
+                  <span v-if="m.roles.length > 2" class="text-xs text-slate-400">+{{ m.roles.length - 2 }}</span>
+                </template>
+                <span v-else class="text-slate-400">-</span>
               </td>
               <td class="px-4 py-3 text-sm text-slate-600">
                 <template v-if="m.founder"><i class="fas fa-crown text-violet-400 mr-1"></i>创始人</template>
@@ -219,10 +225,14 @@ export default toNative(Members)
             <span class="text-xs text-slate-400 flex-shrink-0">身份</span>
             <span class="text-xs text-slate-500"><i class="fas fa-crown text-violet-400 mr-1"></i>创始人</span>
           </div>
-          <!-- 家目录 -->
-          <div class="flex items-start gap-2 mb-3">
-            <span class="text-xs text-slate-400 flex-shrink-0 mt-0.5">家目录</span>
-            <code class="text-xs bg-slate-100 px-2 py-0.5 rounded break-all">{{ m.homeDirectory }}</code>
+          <!-- 角色 -->
+          <div class="flex items-center gap-2 mb-3">
+            <span class="text-xs text-slate-400 flex-shrink-0">角色</span>
+            <span v-if="m.roles && m.roles.length > 0" class="text-xs text-slate-500">
+              <span class="inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-xs text-blue-600 mr-1" v-for="(role, idx) in m.roles.slice(0, 2)" :key="idx">{{ role }}</span>
+              <span v-if="m.roles.length > 2" class="text-xs text-slate-400">+{{ m.roles.length - 2 }}</span>
+            </span>
+            <span v-else class="text-xs text-slate-400">-</span>
           </div>
           <!-- 路由权限 -->
           <div class="flex items-center gap-2 mb-3">

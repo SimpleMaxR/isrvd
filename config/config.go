@@ -27,6 +27,8 @@ var (
 	Links []*LinkConfig
 	// 成员配置
 	Members = map[string]*MemberConfig{}
+	// 角色配置
+	Roles = map[string]*RoleConfig{}
 	// 版本信息（编译时通过脚本注入）
 	Version = "v0.0.0"
 )
@@ -78,6 +80,11 @@ func Apply(conf *Config) {
 	for _, m := range conf.Members {
 		m.HomeDirectory = PathToAbs(m.HomeDirectory, Server.RootDirectory)
 		Members[m.Username] = m
+	}
+
+	Roles = make(map[string]*RoleConfig, len(conf.Roles))
+	for _, r := range conf.Roles {
+		Roles[r.Name] = r
 	}
 }
 

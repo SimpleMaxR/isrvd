@@ -16,6 +16,7 @@ type Config struct {
 	Marketplace *MarketplaceConfig `yaml:"marketplace"`
 	Links       []*LinkConfig      `yaml:"links"`
 	Members     []*MemberConfig    `yaml:"members"`
+	Roles       []*RoleConfig      `yaml:"roles,omitempty"` // 角色定义列表
 }
 
 // 服务器配置
@@ -108,6 +109,13 @@ type LinkConfig struct {
 	Icon  string `yaml:"icon" json:"icon"`   // Font Awesome 图标类名（可选，如 fa-link）
 }
 
+// 角色定义
+type RoleConfig struct {
+	Name        string   `yaml:"name" json:"name"`               // 角色名称（唯一标识）
+	Description string   `yaml:"description,omitempty" json:"description,omitempty"` // 角色描述
+	Permissions []string `yaml:"permissions" json:"permissions"` // 稳定权限 ID 列表
+}
+
 // 成员配置
 type MemberConfig struct {
 	Username      string               `yaml:"username" json:"username"`
@@ -119,7 +127,9 @@ type MemberConfig struct {
 	Founder bool `yaml:"founder" json:"founder"`
 	// Description 成员描述信息（可选）
 	Description string `yaml:"description,omitempty" json:"description,omitempty"`
-	// Permissions 允许访问的路由列表，格式为 "METHOD /api/path"，如 "GET /api/docker/containers"
+	// Roles 成员所属角色列表（角色名引用 roles 定义，角色权限与 Permissions 合并计算）
+	Roles []string `yaml:"roles,omitempty" json:"roles,omitempty"`
+	// Permissions 直接授权列表：支持稳定权限 ID（如 docker.container.list）和兼容旧格式 "METHOD /api/path"
 	Permissions []string `yaml:"permissions,omitempty" json:"permissions,omitempty"`
 }
 

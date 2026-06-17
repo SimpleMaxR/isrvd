@@ -15,6 +15,7 @@ import type {
     OIDCExchange,
     MemberInfo,
     MemberUpsert,
+    Role,
     Route,
     ApiTokenCreate,
     ApiTokenResult,
@@ -159,6 +160,10 @@ class ApiService {
 
     accountRouteList() {
         return http.get<Route[]>('account/routes')
+    }
+
+    accountRoleList() {
+        return http.get<Role[]>('account/roles')
     }
 
     accountMemberList() {

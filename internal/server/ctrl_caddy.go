@@ -15,23 +15,23 @@ import (
 func (app *App) defineCaddyRoutes() []Route {
 	return []Route{
 		// 概览与原始配置
-		{Method: "GET", Path: "/caddy/info", Handler: app.caddyInfoInspect, Module: "caddy", Label: "查询 Caddy 概览"},
-		{Method: "GET", Path: "/caddy/config", Handler: app.caddyConfigInspect, Module: "caddy", Label: "查询 Caddy 完整配置"},
-		{Method: "POST", Path: "/caddy/config", Handler: app.caddyConfigLoad, Module: "caddy", Label: "整体替换 Caddy 配置"},
+		{Method: "GET", Path: "/caddy/info", Handler: app.caddyInfoInspect, Module: "caddy", Label: "查询 Caddy 概览", Permission: "caddy.info.read"},
+		{Method: "GET", Path: "/caddy/config", Handler: app.caddyConfigInspect, Module: "caddy", Label: "查询 Caddy 完整配置", Permission: "caddy.config.read"},
+		{Method: "POST", Path: "/caddy/config", Handler: app.caddyConfigLoad, Module: "caddy", Label: "整体替换 Caddy 配置", Permission: "caddy.config.load"},
 		// 全局选项
-		{Method: "GET", Path: "/caddy/global", Handler: app.caddyGlobalInspect, Module: "caddy", Label: "查询 Caddy 全局选项"},
-		{Method: "PUT", Path: "/caddy/global", Handler: app.caddyGlobalUpdate, Module: "caddy", Label: "更新 Caddy 全局选项"},
+		{Method: "GET", Path: "/caddy/global", Handler: app.caddyGlobalInspect, Module: "caddy", Label: "查询 Caddy 全局选项", Permission: "caddy.global.read"},
+		{Method: "PUT", Path: "/caddy/global", Handler: app.caddyGlobalUpdate, Module: "caddy", Label: "更新 Caddy 全局选项", Permission: "caddy.global.update"},
 		// 路由 CRUD（默认 server=srv0，可通过 query 指定）
-		{Method: "GET", Path: "/caddy/routes", Handler: app.caddyRouteList, Module: "caddy", Label: "查询 Caddy 路由列表"},
-		{Method: "GET", Path: "/caddy/route/:index", Handler: app.caddyRouteInspect, Module: "caddy", Label: "获取 Caddy 路由详情"},
-		{Method: "POST", Path: "/caddy/route", Handler: app.caddyRouteCreate, Module: "caddy", Label: "创建 Caddy 路由"},
-		{Method: "PUT", Path: "/caddy/route/:index", Handler: app.caddyRouteUpdate, Module: "caddy", Label: "更新 Caddy 路由"},
-		{Method: "DELETE", Path: "/caddy/route/:index", Handler: app.caddyRouteDelete, Module: "caddy", Label: "删除 Caddy 路由"},
+		{Method: "GET", Path: "/caddy/routes", Handler: app.caddyRouteList, Module: "caddy", Label: "查询 Caddy 路由列表", Permission: "caddy.route.list"},
+		{Method: "GET", Path: "/caddy/route/:index", Handler: app.caddyRouteInspect, Module: "caddy", Label: "获取 Caddy 路由详情", Permission: "caddy.route.inspect"},
+		{Method: "POST", Path: "/caddy/route", Handler: app.caddyRouteCreate, Module: "caddy", Label: "创建 Caddy 路由", Permission: "caddy.route.create"},
+		{Method: "PUT", Path: "/caddy/route/:index", Handler: app.caddyRouteUpdate, Module: "caddy", Label: "更新 Caddy 路由", Permission: "caddy.route.update"},
+		{Method: "DELETE", Path: "/caddy/route/:index", Handler: app.caddyRouteDelete, Module: "caddy", Label: "删除 Caddy 路由", Permission: "caddy.route.delete"},
 		// TLS 证书 CRUD
-		{Method: "GET", Path: "/caddy/certs", Handler: app.caddyCertList, Module: "caddy", Label: "查询 Caddy TLS 证书列表"},
-		{Method: "POST", Path: "/caddy/cert", Handler: app.caddyCertCreate, Module: "caddy", Label: "创建 Caddy TLS 证书"},
-		{Method: "PUT", Path: "/caddy/cert/:key", Handler: app.caddyCertUpdate, Module: "caddy", Label: "更新 Caddy TLS 证书"},
-		{Method: "DELETE", Path: "/caddy/cert/:key", Handler: app.caddyCertDelete, Module: "caddy", Label: "删除 Caddy TLS 证书"},
+		{Method: "GET", Path: "/caddy/certs", Handler: app.caddyCertList, Module: "caddy", Label: "查询 Caddy TLS 证书列表", Permission: "caddy.cert.list"},
+		{Method: "POST", Path: "/caddy/cert", Handler: app.caddyCertCreate, Module: "caddy", Label: "创建 Caddy TLS 证书", Permission: "caddy.cert.create"},
+		{Method: "PUT", Path: "/caddy/cert/:key", Handler: app.caddyCertUpdate, Module: "caddy", Label: "更新 Caddy TLS 证书", Permission: "caddy.cert.update"},
+		{Method: "DELETE", Path: "/caddy/cert/:key", Handler: app.caddyCertDelete, Module: "caddy", Label: "删除 Caddy TLS 证书", Permission: "caddy.cert.delete"},
 	}
 }
 

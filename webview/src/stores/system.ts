@@ -66,17 +66,24 @@ export const useSystemStore = defineStore('system', () => {
         }
 
         if (module.includes(' ')) {
+            // 旧格式 "METHOD /api/path"：检查服务可用性 + 精确匹配权限
             const path = module.split(' ')[1]
             const seg = path?.match(/^\/api\/([^/]+)/)?.[1]
             if (seg && !checkAvailability(seg)) return false
             return founder || permissions.includes(module)
         }
 
+        // 模块名匹配（如 "docker"）：检查服务可用性 + 模糊匹配权限
         if (!checkAvailability(module)) return false
         if (founder) return true
         return permissions.some(key => {
-            const path = key.split(' ')[1]
-            return path && (path.startsWith(`/api/${module}/`) || path === `/api/${module}`)
+            // 兼容旧 "METHOD /api/path" 格式
+            if (key.includes(' ')) {
+                const path = key.split(' ')[1]
+                return !!(path && (path.startsWith(`/api/${module}/`) || path === `/api/${module}`))
+            }
+            // 稳定权限 ID 格式（如 "docker.container.list"）
+            return key.startsWith(module + '.')
         })
     }
 

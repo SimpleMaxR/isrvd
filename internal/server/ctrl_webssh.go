@@ -15,31 +15,31 @@ import (
 func (app *App) defineWebSSHRoutes() []Route {
 	return []Route{
 		// 认证凭据管理
-		{Method: "GET", Path: "/ssh/credentials", Handler: app.websshCredentialList, Module: "ssh", Label: "查询 SSH 凭据列表"},
-		{Method: "GET", Path: "/ssh/credential/:id", Handler: app.websshCredentialInspect, Module: "ssh", Label: "获取 SSH 凭据详情"},
-		{Method: "POST", Path: "/ssh/credential", Handler: app.websshCredentialCreate, Module: "ssh", Label: "添加 SSH 凭据"},
-		{Method: "PUT", Path: "/ssh/credential/:id", Handler: app.websshCredentialUpdate, Module: "ssh", Label: "更新 SSH 凭据"},
-		{Method: "DELETE", Path: "/ssh/credential/:id", Handler: app.websshCredentialDelete, Module: "ssh", Label: "删除 SSH 凭据"},
+		{Method: "GET", Path: "/ssh/credentials", Handler: app.websshCredentialList, Module: "ssh", Label: "查询 SSH 凭据列表", Permission: "ssh.credential.list"},
+		{Method: "GET", Path: "/ssh/credential/:id", Handler: app.websshCredentialInspect, Module: "ssh", Label: "获取 SSH 凭据详情", Permission: "ssh.credential.inspect"},
+		{Method: "POST", Path: "/ssh/credential", Handler: app.websshCredentialCreate, Module: "ssh", Label: "添加 SSH 凭据", Permission: "ssh.credential.create"},
+		{Method: "PUT", Path: "/ssh/credential/:id", Handler: app.websshCredentialUpdate, Module: "ssh", Label: "更新 SSH 凭据", Permission: "ssh.credential.update"},
+		{Method: "DELETE", Path: "/ssh/credential/:id", Handler: app.websshCredentialDelete, Module: "ssh", Label: "删除 SSH 凭据", Permission: "ssh.credential.delete"},
 		// 主机管理
-		{Method: "GET", Path: "/ssh/hosts", Handler: app.websshHostList, Module: "ssh", Label: "查询 SSH 主机列表"},
-		{Method: "GET", Path: "/ssh/host/:id", Handler: app.websshHostInspect, Module: "ssh", Label: "获取 SSH 主机详情"},
-		{Method: "POST", Path: "/ssh/host", Handler: app.websshHostCreate, Module: "ssh", Label: "添加 SSH 主机"},
-		{Method: "PUT", Path: "/ssh/host/:id", Handler: app.websshHostUpdate, Module: "ssh", Label: "更新 SSH 主机"},
-		{Method: "DELETE", Path: "/ssh/host/:id", Handler: app.websshHostDelete, Module: "ssh", Label: "删除 SSH 主机"},
+		{Method: "GET", Path: "/ssh/hosts", Handler: app.websshHostList, Module: "ssh", Label: "查询 SSH 主机列表", Permission: "ssh.host.list"},
+		{Method: "GET", Path: "/ssh/host/:id", Handler: app.websshHostInspect, Module: "ssh", Label: "获取 SSH 主机详情", Permission: "ssh.host.inspect"},
+		{Method: "POST", Path: "/ssh/host", Handler: app.websshHostCreate, Module: "ssh", Label: "添加 SSH 主机", Permission: "ssh.host.create"},
+		{Method: "PUT", Path: "/ssh/host/:id", Handler: app.websshHostUpdate, Module: "ssh", Label: "更新 SSH 主机", Permission: "ssh.host.update"},
+		{Method: "DELETE", Path: "/ssh/host/:id", Handler: app.websshHostDelete, Module: "ssh", Label: "删除 SSH 主机", Permission: "ssh.host.delete"},
 		// SSH 终端
-		{Method: "GET", Path: "/ssh/to/:id", Handler: app.websshTerminal, Module: "ssh", Label: "打开 SSH 终端", QueryToken: true},
+		{Method: "GET", Path: "/ssh/to/:id", Handler: app.websshTerminal, Module: "ssh", Label: "打开 SSH 终端", Permission: "ssh.terminal", QueryToken: true},
 		// SFTP 文件管理
-		{Method: "GET", Path: "/ssh/sftp/:id/ls", Handler: app.websshSFTPList, Module: "ssh", Label: "SFTP 列出目录"},
-		{Method: "GET", Path: "/ssh/sftp/:id/download", Handler: app.websshSFTPDownload, Module: "ssh", Label: "SFTP 下载文件", QueryToken: true},
-		{Method: "POST", Path: "/ssh/sftp/:id/upload", Handler: app.websshSFTPUpload, Module: "ssh", Label: "SFTP 上传文件"},
-		{Method: "DELETE", Path: "/ssh/sftp/:id/rm", Handler: app.websshSFTPRemove, Module: "ssh", Label: "SFTP 删除文件"},
-		{Method: "POST", Path: "/ssh/sftp/:id/mkdir", Handler: app.websshSFTPMkdir, Module: "ssh", Label: "SFTP 创建目录"},
-		{Method: "POST", Path: "/ssh/sftp/:id/rename", Handler: app.websshSFTPRename, Module: "ssh", Label: "SFTP 重命名"},
-		{Method: "POST", Path: "/ssh/sftp/:id/chmod", Handler: app.websshSFTPChmod, Module: "ssh", Label: "SFTP 修改权限"},
-		{Method: "POST", Path: "/ssh/sftp/:id/chown", Handler: app.websshSFTPChown, Module: "ssh", Label: "SFTP 修改所有者"},
-		{Method: "GET", Path: "/ssh/sftp/:id/read", Handler: app.websshSFTPRead, Module: "ssh", Label: "SFTP 读取文件"},
-		{Method: "POST", Path: "/ssh/sftp/:id/write", Handler: app.websshSFTPWrite, Module: "ssh", Label: "SFTP 写入文件"},
-		{Method: "GET", Path: "/ssh/sftp/:id/dir-size", Handler: app.websshSFTPDirSize, Module: "ssh", Label: "SFTP 计算目录大小"},
+		{Method: "GET", Path: "/ssh/sftp/:id/ls", Handler: app.websshSFTPList, Module: "ssh", Label: "SFTP 列出目录", Permission: "ssh.sftp.list"},
+		{Method: "GET", Path: "/ssh/sftp/:id/download", Handler: app.websshSFTPDownload, Module: "ssh", Label: "SFTP 下载文件", Permission: "ssh.sftp.download", QueryToken: true},
+		{Method: "POST", Path: "/ssh/sftp/:id/upload", Handler: app.websshSFTPUpload, Module: "ssh", Label: "SFTP 上传文件", Permission: "ssh.sftp.upload"},
+		{Method: "DELETE", Path: "/ssh/sftp/:id/rm", Handler: app.websshSFTPRemove, Module: "ssh", Label: "SFTP 删除文件", Permission: "ssh.sftp.delete"},
+		{Method: "POST", Path: "/ssh/sftp/:id/mkdir", Handler: app.websshSFTPMkdir, Module: "ssh", Label: "SFTP 创建目录", Permission: "ssh.sftp.mkdir"},
+		{Method: "POST", Path: "/ssh/sftp/:id/rename", Handler: app.websshSFTPRename, Module: "ssh", Label: "SFTP 重命名", Permission: "ssh.sftp.rename"},
+		{Method: "POST", Path: "/ssh/sftp/:id/chmod", Handler: app.websshSFTPChmod, Module: "ssh", Label: "SFTP 修改权限", Permission: "ssh.sftp.chmod"},
+		{Method: "POST", Path: "/ssh/sftp/:id/chown", Handler: app.websshSFTPChown, Module: "ssh", Label: "SFTP 修改所有者", Permission: "ssh.sftp.chown"},
+		{Method: "GET", Path: "/ssh/sftp/:id/read", Handler: app.websshSFTPRead, Module: "ssh", Label: "SFTP 读取文件", Permission: "ssh.sftp.read"},
+		{Method: "POST", Path: "/ssh/sftp/:id/write", Handler: app.websshSFTPWrite, Module: "ssh", Label: "SFTP 写入文件", Permission: "ssh.sftp.write"},
+		{Method: "GET", Path: "/ssh/sftp/:id/dir-size", Handler: app.websshSFTPDirSize, Module: "ssh", Label: "SFTP 计算目录大小", Permission: "ssh.sftp.size"},
 	}
 }
 

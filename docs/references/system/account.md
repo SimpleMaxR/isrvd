@@ -57,12 +57,27 @@ isrvd_get "/account/routes"
 
 | 字段 | 类型 | 说明 |
 |------|------|------|
-| key | string | 路由权限键，格式为 `METHOD /api/path` |
+| key | string | 路由权限键，格式为 `METHOD /api/path`，历史兼容标识 |
+| permission | string | 稳定权限 ID，如 `docker.container.list`，独立于 API 路径 |
 | module | string | 模块名 |
 | label | string | 路由显示名 |
 | access | number | 访问级别：`0`=需要具体权限，`1`=登录即可访问，`-1`=匿名访问 |
 
-> 路由未显式配置 `access` 时默认为 `0`，即需要具体权限。
+> 路由未显式配置 `access` 时默认为 `0`，即需要具体权限。稳定权限 ID (`permission`) 不受 API 路径变更影响，推荐使用稳定权限 ID 配置成员权限。
+
+## 列出角色定义
+
+```bash
+isrvd_get "/account/roles"
+```
+
+返回所有已定义的角色列表。
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| name | string | 角色名称（唯一标识） |
+| description | string | 角色描述 |
+| permissions | string[] | 角色包含的稳定权限 ID 列表，如 `["docker.container.list", "docker.image.list"]` |
 
 ## 创建 API Token
 
@@ -117,22 +132,23 @@ isrvd_get "/account/members"
 | homeDirectory | string | 主目录 |
 | founder | boolean | 是否为创建者 |
 | description | string | 描述 |
-| permissions | string[] | 权限列表 |
+| roles | string[] | 成员角色列表（角色权限与 permissions 合并计算） |
+| permissions | string[] | 直接权限列表（支持稳定权限 ID 如 `docker.container.list` 和兼容旧格式 `GET /api/docker/containers`） |
 | twoFactor | object | 二次验证配置；`totp.secret` 不返回 |
 
 ## 创建成员
 
 ```bash
-isrvd_post "/account/member" '{"username":"<USER>","password":"<PASS>","homeDirectory":"<HOME_DIR>","description":"<DESC>","permissions":["GET /api/docker/containers","GET /api/docker/images"]}'
+isrvd_post "/account/member" '{"username":"<USER>","password":"<PASS>","homeDirectory":"<HOME_DIR>","description":"<DESC>","roles":["viewer"],"permissions":["docker.container.list","docker.image.list"]}'
 ```
 
 ## 更新成员
 
 ```bash
-isrvd_put "/account/member/<USER>" '{"description":"<DESC>","permissions":["GET /api/docker/containers","GET /api/docker/images","GET /api/swarm/services"]}'
+isrvd_put "/account/member/<USER>" '{"description":"<DESC>","roles":["viewer"],"permissions":["docker.container.list","docker.image.list","swarm.service.list"]}'
 ```
 
-> password 为空则不修改。
+> password 为空则不修改。`roles` 引用配置文件中定义的 `roles` 角色名，角色权限与 `permissions` 直接权限合并计算。`permissions` 支持稳定权限 ID（如 `docker.container.list`）和旧格式（如 `GET /api/docker/containers`），推荐使用稳定权限 ID，不受 API 路径变更影响。
 
 ## 删除成员
 

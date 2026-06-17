@@ -13,13 +13,13 @@ import (
 func (app *App) defineCronRoutes() []Route {
 	return []Route{
 		{Method: "GET", Path: "/cron/types", Handler: app.cronTypes, Module: "cron", Label: "获取可用脚本类型", Access: AccessAuth},
-		{Method: "GET", Path: "/cron/jobs", Handler: app.cronJobList, Module: "cron", Label: "列出计划任务"},
-		{Method: "POST", Path: "/cron/jobs", Handler: app.cronJobCreate, Module: "cron", Label: "创建计划任务"},
-		{Method: "PUT", Path: "/cron/jobs/:id", Handler: app.cronJobUpdate, Module: "cron", Label: "更新计划任务"},
-		{Method: "DELETE", Path: "/cron/jobs/:id", Handler: app.cronJobDelete, Module: "cron", Label: "删除计划任务"},
-		{Method: "POST", Path: "/cron/jobs/:id/run", Handler: app.cronJobRun, Module: "cron", Label: "立即执行任务"},
-		{Method: "PATCH", Path: "/cron/jobs/:id", Handler: app.cronJobStatusPatch, Module: "cron", Label: "启用或禁用任务"},
-		{Method: "GET", Path: "/cron/jobs/:id/logs", Handler: app.cronJobLogs, Module: "cron", Label: "查询任务执行历史"},
+		{Method: "GET", Path: "/cron/jobs", Handler: app.cronJobList, Module: "cron", Label: "列出计划任务", Permission: "cron.job.list"},
+		{Method: "POST", Path: "/cron/jobs", Handler: app.cronJobCreate, Module: "cron", Label: "创建计划任务", Permission: "cron.job.create"},
+		{Method: "PUT", Path: "/cron/jobs/:id", Handler: app.cronJobUpdate, Module: "cron", Label: "更新计划任务", Permission: "cron.job.update"},
+		{Method: "DELETE", Path: "/cron/jobs/:id", Handler: app.cronJobDelete, Module: "cron", Label: "删除计划任务", Permission: "cron.job.delete"},
+		{Method: "POST", Path: "/cron/jobs/:id/run", Handler: app.cronJobRun, Module: "cron", Label: "立即执行任务", Permission: "cron.job.run"},
+		{Method: "PATCH", Path: "/cron/jobs/:id", Handler: app.cronJobStatusPatch, Module: "cron", Label: "启用或禁用任务", Permission: "cron.job.status"},
+		{Method: "GET", Path: "/cron/jobs/:id/logs", Handler: app.cronJobLogs, Module: "cron", Label: "查询任务执行历史", Permission: "cron.job.logs"},
 	}
 }
 

@@ -5,7 +5,7 @@ import { usePortal } from '@/stores'
 
 import api from '@/service/api'
 import { RouteAccessPerm } from '@/service/types'
-import type { MemberInfo, MemberUpsert, Route } from '@/service/types'
+import type { MemberInfo, MemberUpsert, Role, Route } from '@/service/types'
 
 import BaseModal from '@/component/modal.vue'
 
@@ -61,6 +61,11 @@ class MemberEditModal extends Vue {
     modalLoading = false
     routesLoading = false
     routeGroups: RouteGroup[] = []
+    // 角色定义列表
+    availableRoles: Role[] = []
+    rolesLoading = false
+    // 当前选中角色名集合
+    selectedRoles: Set<string> = new Set()
     // 非具体权限路由 key 集合（匿名/登录即可），默认勾选且不可取消
     autoPerms: Set<string> = new Set()
     // formData.permissions 的 Set 镜像，用于 O(1) 查找
@@ -73,6 +78,7 @@ class MemberEditModal extends Vue {
         password: '',
         homeDirectory: '',
         description: '',
+        roles: [],
         permissions: []
     }
 
@@ -124,28 +130,54 @@ class MemberEditModal extends Vue {
         }
     }
 
+    async loadRoles() {
+        if (this.availableRoles.length > 0) return
+        this.rolesLoading = true
+        try {
+            const res = await api.accountRoleList()
+            this.availableRoles = res.payload || []
+        } finally {
+            this.rolesLoading = false
+        }
+    }
+
+    toggleRole(roleName: string) {
+        if (this.selectedRoles.has(roleName)) {
+            this.selectedRoles.delete(roleName)
+            this.formData.roles = this.formData.roles.filter(r => r !== roleName)
+        } else {
+            this.selectedRoles.add(roleName)
+            this.formData.roles = [...this.formData.roles, roleName]
+        }
+    }
+
     async show(member: MemberInfo | null = null) {
         if (member) {
             this.originalUsername = member.username
             const perms = [...(member.permissions || [])]
+            const roles = [...(member.roles || [])]
             this.formData = {
                 username: member.username,
                 password: '',
                 homeDirectory: member.homeDirectory,
                 description: member.description,
+                roles: roles,
                 permissions: perms
             }
             this.permSet = new Set(perms)
+            this.selectedRoles = new Set(roles)
         } else {
             this.originalUsername = ''
             this.formData = {
                 username: '', password: '', homeDirectory: '', description: '',
+                roles: [],
                 permissions: []
             }
             this.permSet = new Set()
+            this.selectedRoles = new Set()
         }
         this.isOpen = true
-        await this.loadRoutes()
+        await Promise.all([this.loadRoutes(), this.loadRoles()])
     }
 
     // 路由是否被勾选（自动权限路由始终返回 true）
@@ -285,6 +317,23 @@ export default toNative(MemberEditModal)
         <label class="form-label">描述 <span class="text-slate-400 font-normal">(可选)</span></label>
         <input v-model="formData.description" type="text" placeholder="请输入成员描述（可选）" class="input" maxlength="64" />
         <p class="mt-1 text-xs text-slate-400">用于标识成员用途，最长 64 字符</p>
+      </div>
+      <!-- 角色选择 -->
+      <div>
+        <label class="form-label">角色 <span class="text-slate-400 font-normal">(可选)</span></label>
+        <div v-if="rolesLoading" class="mt-1 text-xs text-slate-400">加载中...</div>
+        <div v-else-if="availableRoles.length === 0" class="mt-1 text-xs text-slate-400">暂无可用角色，可在配置文件中定义 roles</div>
+        <div v-else class="flex flex-wrap gap-2 mt-1">
+          <label v-for="role in availableRoles" :key="role.name"
+            :class="['inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs cursor-pointer transition-colors border',
+              selectedRoles.has(role.name) ? 'bg-blue-50 border-blue-300 text-blue-700' : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300']"
+          >
+            <input type="checkbox" :checked="selectedRoles.has(role.name)" class="sr-only" @change="toggleRole(role.name)" />
+            <span class="truncate max-w-[180px]">{{ role.name }}</span>
+            <span v-if="role.description" class="text-slate-400 hidden sm:inline">{{ role.description }}</span>
+          </label>
+        </div>
+        <p class="mt-1 text-xs text-slate-400">角色权限与下方路由权限合并计算，角色中的权限无需重复勾选</p>
       </div>
       <!-- 路由权限 -->
       <div>

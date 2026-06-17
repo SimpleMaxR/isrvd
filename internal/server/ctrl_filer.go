@@ -16,23 +16,23 @@ import (
 func (app *App) defineFilerRoutes() []Route {
 	return []Route{
 		// 读取类操作（GET）
-		{Method: "GET", Path: "/filer/files", Handler: app.filerFileList, Module: "filer", Label: "查询目录文件列表"},
-		{Method: "GET", Path: "/filer/file", Handler: app.filerFileRead, Module: "filer", Label: "读取文件内容"},
-		{Method: "GET", Path: "/filer/download", Handler: app.filerFileDownload, Module: "filer", Label: "下载文件", QueryToken: true},
-		{Method: "GET", Path: "/filer/dir-size", Handler: app.filerDirSize, Module: "filer", Label: "计算目录大小"},
+		{Method: "GET", Path: "/filer/files", Handler: app.filerFileList, Module: "filer", Label: "查询目录文件列表", Permission: "filer.file.list"},
+		{Method: "GET", Path: "/filer/file", Handler: app.filerFileRead, Module: "filer", Label: "读取文件内容", Permission: "filer.file.read"},
+		{Method: "GET", Path: "/filer/download", Handler: app.filerFileDownload, Module: "filer", Label: "下载文件", Permission: "filer.file.download", QueryToken: true},
+		{Method: "GET", Path: "/filer/dir-size", Handler: app.filerDirSize, Module: "filer", Label: "计算目录大小", Permission: "filer.dir.size"},
 		// 创建类操作（POST）
-		{Method: "POST", Path: "/filer/dir", Handler: app.filerFileMkdir, Module: "filer", Label: "创建目录"},
-		{Method: "POST", Path: "/filer/file", Handler: app.filerFileCreate, Module: "filer", Label: "创建文件"},
-		{Method: "POST", Path: "/filer/upload", Handler: app.filerFileUpload, Module: "filer", Label: "上传文件"},
+		{Method: "POST", Path: "/filer/dir", Handler: app.filerFileMkdir, Module: "filer", Label: "创建目录", Permission: "filer.dir.create"},
+		{Method: "POST", Path: "/filer/file", Handler: app.filerFileCreate, Module: "filer", Label: "创建文件", Permission: "filer.file.create"},
+		{Method: "POST", Path: "/filer/upload", Handler: app.filerFileUpload, Module: "filer", Label: "上传文件", Permission: "filer.file.upload"},
 		// 修改类操作（PUT）
-		{Method: "PUT", Path: "/filer/file", Handler: app.filerFileModify, Module: "filer", Label: "保存文件内容"},
-		{Method: "PUT", Path: "/filer/chmod", Handler: app.filerFileChmod, Module: "filer", Label: "修改文件权限"},
+		{Method: "PUT", Path: "/filer/file", Handler: app.filerFileModify, Module: "filer", Label: "保存文件内容", Permission: "filer.file.write"},
+		{Method: "PUT", Path: "/filer/chmod", Handler: app.filerFileChmod, Module: "filer", Label: "修改文件权限", Permission: "filer.file.chmod"},
 		// 删除类操作（DELETE）
-		{Method: "DELETE", Path: "/filer/file", Handler: app.filerFileDelete, Module: "filer", Label: "删除文件或目录"},
+		{Method: "DELETE", Path: "/filer/file", Handler: app.filerFileDelete, Module: "filer", Label: "删除文件或目录", Permission: "filer.file.delete"},
 		// 动作型操作（POST）
-		{Method: "POST", Path: "/filer/rename", Handler: app.filerFileRename, Module: "filer", Label: "重命名文件或目录"},
-		{Method: "POST", Path: "/filer/zip", Handler: app.filerFileZip, Module: "filer", Label: "压缩文件或目录"},
-		{Method: "POST", Path: "/filer/unzip", Handler: app.filerFileUnzip, Module: "filer", Label: "解压文件"},
+		{Method: "POST", Path: "/filer/rename", Handler: app.filerFileRename, Module: "filer", Label: "重命名文件或目录", Permission: "filer.file.rename"},
+		{Method: "POST", Path: "/filer/zip", Handler: app.filerFileZip, Module: "filer", Label: "压缩文件或目录", Permission: "filer.file.zip"},
+		{Method: "POST", Path: "/filer/unzip", Handler: app.filerFileUnzip, Module: "filer", Label: "解压文件", Permission: "filer.file.unzip"},
 	}
 }
 

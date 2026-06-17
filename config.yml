@@ -61,6 +61,26 @@ links:
     url: https://api.rehi.org
     icon: fas fa-cloud-bolt
 
+# 角色定义（可选）
+# 角色包含一组稳定权限 ID，可通过成员的 roles 字段引用
+# roles:
+#   - name: viewer
+#     description: 只读权限
+#     permissions:
+#       - docker.container.list
+#       - docker.container.inspect
+#       - docker.image.list
+#       - docker.image.inspect
+#   - name: operator
+#     description: 运维操作权限
+#     permissions:
+#       - docker.container.list
+#       - docker.container.inspect
+#       - docker.container.action
+#       - docker.image.list
+#       - docker.image.inspect
+#       - docker.image.action
+
 members:
   - username: admin
     password: admin
@@ -69,8 +89,11 @@ members:
   - username: user1
     password: password1
     homeDirectory: member/user1/
+    # roles:
+    #   - viewer
     permissions:
-      # 格式："METHOD /api/path"，如 "GET /api/docker/containers"
+      # 支持稳定权限 ID：如 "docker.container.list"
+      # 兼容旧格式："METHOD /api/path"，如 "GET /api/docker/containers"
       - GET /api/overview/status
       - GET /api/docker/containers
       - GET /api/docker/container/:id

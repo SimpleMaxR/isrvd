@@ -35,9 +35,18 @@ export const RouteAccessAuth = 1 // 登录即可访问
 
 export interface Route {
     key: string
+    permission: string
     module: string
     label: string
     access: number
+}
+
+// ─── 角色定义 ───
+
+export interface Role {
+    name: string
+    description: string
+    permissions: string[]
 }
 
 // ─── 成员管理 ───
@@ -47,6 +56,7 @@ export interface MemberInfo {
     homeDirectory: string
     founder: boolean
     description: string
+    roles: string[]
     permissions: string[]
 }
 
@@ -56,6 +66,7 @@ export interface MemberUpsert {
     password: string
     homeDirectory: string
     description: string
+    roles: string[]
     permissions: string[]
 }
 

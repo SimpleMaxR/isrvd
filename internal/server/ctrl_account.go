@@ -30,7 +30,7 @@ func (app *App) defineAccountRoutes() []Route {
 		{Method: "GET", Path: "/account/oidc/callback", Handler: app.accountOIDCCallback, Module: "account", Label: "处理 OIDC 回调", Access: AccessAnon},
 		{Method: "POST", Path: "/account/oidc/exchange", Handler: app.accountOIDCExchange, Module: "account", Label: "交换 OIDC 登录码", Access: AccessAnon},
 		// 凭证管理
-		{Method: "POST", Path: "/account/token", Handler: app.accountTokenCreate, Module: "account", Label: "创建 API 令牌"},
+		{Method: "POST", Path: "/account/token", Handler: app.accountTokenCreate, Module: "account", Label: "创建 API 令牌", Permission: "account.token.create"},
 		{Method: "PUT", Path: "/account/password", Handler: app.accountPasswordChange, Module: "account", Label: "修改当前用户密码", Access: AccessAuth},
 		{Method: "GET", Path: "/account/2fa/status", Handler: app.accountTwoFactorStatus, Module: "account", Label: "查询二次验证状态", Access: AccessAuth},
 		{Method: "POST", Path: "/account/2fa/totp/begin", Handler: app.accountTOTPBegin, Module: "account", Label: "开始绑定 TOTP 二次验证", Access: AccessAuth},
@@ -38,11 +38,13 @@ func (app *App) defineAccountRoutes() []Route {
 		{Method: "POST", Path: "/account/2fa/totp/disable", Handler: app.accountTOTPDisable, Module: "account", Label: "禁用 TOTP 二次验证", Access: AccessAuth},
 		// 路由权限
 		{Method: "GET", Path: "/account/routes", Handler: app.accountRouteList, Module: "account", Label: "查询路由权限列表", Access: AccessAuth},
+		// 角色定义
+		{Method: "GET", Path: "/account/roles", Handler: app.accountRoleList, Module: "account", Label: "查询角色定义列表", Access: AccessAuth},
 		// 成员管理
-		{Method: "GET", Path: "/account/members", Handler: app.accountMemberList, Module: "account", Label: "查询成员列表"},
-		{Method: "POST", Path: "/account/member", Handler: app.accountMemberCreate, Module: "account", Label: "创建成员"},
-		{Method: "PUT", Path: "/account/member/:username", Handler: app.accountMemberUpdate, Module: "account", Label: "更新成员"},
-		{Method: "DELETE", Path: "/account/member/:username", Handler: app.accountMemberDelete, Module: "account", Label: "删除成员"},
+		{Method: "GET", Path: "/account/members", Handler: app.accountMemberList, Module: "account", Label: "查询成员列表", Permission: "account.member.list"},
+		{Method: "POST", Path: "/account/member", Handler: app.accountMemberCreate, Module: "account", Label: "创建成员", Permission: "account.member.create"},
+		{Method: "PUT", Path: "/account/member/:username", Handler: app.accountMemberUpdate, Module: "account", Label: "更新成员", Permission: "account.member.update"},
+		{Method: "DELETE", Path: "/account/member/:username", Handler: app.accountMemberDelete, Module: "account", Label: "删除成员", Permission: "account.member.delete"},
 	}
 }
 
@@ -253,6 +255,11 @@ func (app *App) accountRouteList(c *gin.Context) {
 		return routes[i].Key < routes[j].Key
 	})
 	respondSuccess(c, "ok", routes)
+}
+
+// accountRoleList 返回所有角色定义
+func (app *App) accountRoleList(c *gin.Context) {
+	respondSuccess(c, "ok", app.accountSvc.RoleList())
 }
 
 // accountMemberList 列出所有成员

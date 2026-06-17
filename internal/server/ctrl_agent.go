@@ -15,7 +15,7 @@ import (
 // defineAgentRoutes 定义 Agent 模块路由（LLM 代理）
 func (app *App) defineAgentRoutes() []Route {
 	return []Route{
-		{Method: "ANY", Path: "/agent/*path", Handler: app.agentProxy, Module: "agent", Label: "代理 LLM API 请求"},
+		{Method: "ANY", Path: "/agent/*path", Handler: app.agentProxy, Module: "agent", Label: "代理 LLM API 请求", Permission: "agent.proxy"},
 	}
 }
 

@@ -65,6 +65,8 @@ isrvd_get "/system/config"
 | monitor | object | `{interval}`（采集间隔秒数，非法值表示禁用） |
 | marketplace | object | `{url}` |
 | links | object[] | `{label, url, icon}` |
+| members | object[] | `{username, homeDirectory, founder, description, roles, permissions}` 成员配置列表 |
+| roles | object[] | `{name, description, permissions}` 角色定义列表 |
 
 ## 更新配置
 
@@ -82,6 +84,52 @@ isrvd_put "/system/config" '<CURRENT_CONFIG_WITH_CHANGES>'
 - `oidc.redirectUrl` 生产环境建议显式配置固定 HTTPS 地址；留空会按当前请求 Host 自动生成，适合本地开发。
 - `oidc.usernameClaim` 默认 `sub`；如改用 `email`，需确保 IdP 已验证邮箱且本地 `members.username` 与邮箱完全一致。
 - `oidc.loginLabel` 自定义 OIDC 登录按钮显示名称；留空则使用默认文案"使用 OIDC 登录"。
+
+### 角色与权限配置
+
+角色定义示例：
+
+```yaml
+roles:
+  - name: viewer
+    description: 只读权限
+    permissions:
+      - docker.container.list
+      - docker.container.inspect
+      - docker.image.list
+      - docker.image.inspect
+  - name: operator
+    description: 运维操作权限
+    permissions:
+      - docker.container.list
+      - docker.container.action
+      - docker.image.list
+      - docker.image.action
+```
+
+成员配置中通过 `roles` 引用角色名，角色权限与成员的 `permissions` 直接权限合并计算。`permissions` 支持两种格式：
+
+- **稳定权限 ID**（推荐）：如 `docker.container.list`，不受 API 路径变更影响
+- **兼容旧格式**：如 `GET /api/docker/containers`，API 路径变更后可能失效
+
+成员配置示例：
+
+```yaml
+members:
+  - username: admin
+    password: $2a$10$...
+    founder: true
+    description: 系统管理员（拥有所有权限）
+  - username: user
+    password: $2a$10$...
+    roles:
+      - viewer
+    permissions:
+      - docker.image.search
+    description: 只读用户 + 额外镜像搜索权限
+```
+
+> `founder: true` 的创始人拥有所有模块完整权限，不受角色和权限限制。
 
 ---
 

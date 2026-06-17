@@ -57,15 +57,16 @@ type AuditLevel int
 
 // Route 定义单个路由的完整信息（同时用于注册、权限验证和审计控制）
 type Route struct {
-	Key        string          `json:"key,omitempty"` // "METHOD /api/path"
-	Method     string          `json:"-"`             // HTTP 方法：GET/POST/PUT/PATCH/DELETE/ANY
-	Path       string          `json:"-"`             // 路由路径（Gin 格式，支持 :param 和 *）
-	Handler    gin.HandlerFunc `json:"-"`             // 处理函数
-	Module     string          `json:"module"`        // 模块名，空字符串表示无需模块权限
-	Label      string          `json:"label"`         // 模块显示名，用于错误提示
-	Access     RouteAccess     `json:"access"`        // 访问级别，0：需要具体权限，-1：匿名，1：登录即可访问
-	Audit      AuditLevel      `json:"-"`             // 审计级别，0：按 Method 审计，-1：忽略，1：强制审计
-	QueryToken bool            `json:"-"`             // 允许从 query ?token= 提取 JWT（用于 SSE/文件下载等无法携带 Header 的场景）
+	Key        string          `json:"key,omitempty"`        // "METHOD /api/path"，历史兼容标识
+	Permission string          `json:"permission,omitempty"` // 稳定权限 ID（如 docker.container.list），独立于 API 路径
+	Method     string          `json:"-"`                    // HTTP 方法：GET/POST/PUT/PATCH/DELETE/ANY
+	Path       string          `json:"-"`                    // 路由路径（Gin 格式，支持 :param 和 *）
+	Handler    gin.HandlerFunc `json:"-"`                    // 处理函数
+	Module     string          `json:"module"`               // 模块名，空字符串表示无需模块权限
+	Label      string          `json:"label"`                // 模块显示名，用于错误提示
+	Access     RouteAccess     `json:"access"`               // 访问级别，0：需要具体权限，-1：匿名，1：登录即可访问
+	Audit      AuditLevel      `json:"-"`                    // 审计级别，0：按 Method 审计，-1：忽略，1：强制审计
+	QueryToken bool            `json:"-"`                    // 允许从 query ?token= 提取 JWT（用于 SSE/文件下载等无法携带 Header 的场景）
 }
 
 const APINamespace = "/api"
