@@ -95,7 +95,7 @@ func (c *Collector) CollectContainerStatNow(ctx context.Context, id string) *Rec
 	if registry.DockerService == nil {
 		return nil
 	}
-	stats, _, err := registry.DockerService.ContainerStats(ctx, id)
+	stats, err := registry.DockerService.ContainerStats(ctx, id)
 	if err != nil {
 		return nil
 	}

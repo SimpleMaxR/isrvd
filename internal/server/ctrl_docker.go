@@ -78,7 +78,8 @@ func (app *App) dockerInfo(c *gin.Context) {
 
 func (app *App) dockerContainerList(c *gin.Context) {
 	all := c.DefaultQuery("all", "false") == "true"
-	result, err := app.dockerSvc.ContainerList(c.Request.Context(), all, c.Query("filters"))
+	stats := c.DefaultQuery("stats", "false") == "true"
+	result, err := app.dockerSvc.ContainerList(c.Request.Context(), all, stats, c.Query("filters"))
 	if err != nil {
 		// Docker filters 解析失败属于调用方错误（SDK 以 InvalidParameter 标记），返回 400
 		var invalid interface{ InvalidParameter() }

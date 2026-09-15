@@ -41,6 +41,9 @@ export interface DockerContainerInfo {
     ports: string[]
     networks?: string[]
     created: number
+    cpuPercent: number // 仅运行中容器有效，列表需携带 stats=true
+    memoryUsage: number // 仅运行中容器有效，列表需携带 stats=true
+    memoryPercent: number // 仅运行中容器有效，列表需携带 stats=true
     isSwarm?: boolean
     isSelf?: boolean
     labels?: Record<string, string>

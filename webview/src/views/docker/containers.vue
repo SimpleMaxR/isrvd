@@ -7,7 +7,7 @@ import api from '@/service/api'
 import type { DockerContainerInfo } from '@/service/types'
 import { COMPOSE_PROJECT_LABEL, COMPOSE_SERVICE_LABEL } from '@/service/types/docker'
 
-import { formatTime } from '@/helper/format'
+import { formatFileSize, formatTime } from '@/helper/format'
 
 import PageSearch from '@/component/page-search.vue'
 
@@ -61,7 +61,7 @@ class Containers extends Vue {
     async loadContainers() {
         this.loading = true
         try {
-            const res = await api.dockerContainerList(this.showAll)
+            const res = await api.dockerContainerList(this.showAll, true)
             this.containers = res.payload || []
         } finally {
             this.loading = false
@@ -113,12 +113,20 @@ class Containers extends Vue {
         return state === 'running' ? 'badge-success' : 'badge-muted'
     }
 
+    // 用量百分比偏高时用颜色提示
+    usageClass(percent: number) {
+        if (percent >= 80) return 'text-red-500 font-medium'
+        if (percent >= 60) return 'text-amber-600 font-medium'
+        return 'text-slate-600'
+    }
+
     composeEditTitle(container: DockerContainerInfo) {
         return container.isSwarm
             ? '由 Swarm 管理，不支持直接编辑'
             : (this.isCompose(container) ? '编辑 Compose 项目配置' : '编辑配置')
     }
 
+    formatFileSize = formatFileSize
     formatTime = formatTime
 
     // ─── 生命周期 ───
@@ -215,6 +223,8 @@ export default toNative(Containers)
               <tr class="bg-slate-100 border-b border-slate-200">
                 <th class="th">名称</th>
                 <th class="w-40 th">状态</th>
+                <th class="w-24 th">CPU</th>
+                <th class="w-40 th">内存</th>
                 <th class="w-48 th">端口</th>
                 <th class="w-28 th">创建时间</th>
                 <th class="w-48 th-right">操作</th>
@@ -239,6 +249,17 @@ export default toNative(Containers)
                     <span :class="['badge', stateBadgeClass(ct.state)]" :title="ct.status">{{ ct.state }}</span>
                     <span v-if="isCompose(ct)" class="badge badge-warning" :title="composeBadgeTitle(ct)">Compose</span>
                   </div>
+                </td>
+                <td class="px-4 py-3 font-mono text-xs">
+                  <span v-if="ct.state === 'running'" :class="usageClass(ct.cpuPercent)">{{ ct.cpuPercent.toFixed(2) }}%</span>
+                  <span v-else class="text-slate-400">-</span>
+                </td>
+                <td class="px-4 py-3 font-mono text-xs">
+                  <template v-if="ct.state === 'running'">
+                    <span :class="usageClass(ct.memoryPercent)">{{ formatFileSize(ct.memoryUsage) }}</span>
+                    <span class="text-slate-400"> / {{ ct.memoryPercent.toFixed(2) }}%</span>
+                  </template>
+                  <span v-else class="text-slate-400">-</span>
                 </td>
                 <td class="px-4 py-3 font-mono text-xs text-slate-600">
                   <template v-if="ct.ports && ct.ports.length > 0">
@@ -307,6 +328,12 @@ export default toNative(Containers)
             <div class="card-prop-row">
               <span class="text-xs text-slate-400 flex-shrink-0">创建时间</span>
               <span class="text-xs text-slate-500">{{ formatTime(new Date(ct.created * 1000).toISOString()) }}</span>
+            </div>
+
+            <!-- 资源用量 -->
+            <div v-if="ct.state === 'running'" class="card-prop-row">
+              <span class="text-xs text-slate-400 flex-shrink-0">资源</span>
+              <span class="text-xs text-slate-500">CPU {{ ct.cpuPercent.toFixed(2) }}% · 内存 {{ formatFileSize(ct.memoryUsage) }} ({{ ct.memoryPercent.toFixed(2) }}%)</span>
             </div>
 
             <!-- 端口信息 -->

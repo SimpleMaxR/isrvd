@@ -29,24 +29,33 @@ var (
 	cpuFreqLastUpdate time.Time
 )
 
+// containerStatsConcurrency 列表补充资源用量时的并发上限。
+// Docker 非流式 stats 需等待两个采集周期（约 1~2s）才返回，并行发起可让整体耗时与容器数量无关；
+// 上限仅用于避免容器数量极大时同时压满 Docker API。
+const containerStatsConcurrency = 32
+
 // ContainerInfo Docker 容器信息（列表项），保持前端稳定响应结构。
 type ContainerInfo struct {
-	ID       string            `json:"id"`                 // 容器 ID
-	Name     string            `json:"name"`               // 容器名称
-	Image    string            `json:"image"`              // 镜像名称
-	State    string            `json:"state"`              // 运行状态（running/exited/paused）
-	Status   string            `json:"status"`             // 状态描述
-	Ports    []string          `json:"ports"`              // 端口映射列表
-	Networks []string          `json:"networks,omitempty"` // 所属网络
-	Created  int64             `json:"created"`            // 创建时间戳
-	IsSwarm  bool              `json:"isSwarm,omitempty"`  // 是否为 Swarm 管理的容器
-	IsSelf   bool              `json:"isSelf,omitempty"`   // 是否为当前服务容器
-	Labels   map[string]string `json:"labels,omitempty"`   // 容器标签
+	ID            string            `json:"id"`                 // 容器 ID
+	Name          string            `json:"name"`               // 容器名称
+	Image         string            `json:"image"`              // 镜像名称
+	State         string            `json:"state"`              // 运行状态（running/exited/paused）
+	Status        string            `json:"status"`             // 状态描述
+	Ports         []string          `json:"ports"`              // 端口映射列表
+	Networks      []string          `json:"networks,omitempty"` // 所属网络
+	Created       int64             `json:"created"`            // 创建时间戳
+	CPUPercent    float64           `json:"cpuPercent"`         // CPU 使用率（百分比），仅运行中容器有效
+	MemoryUsage   int64             `json:"memoryUsage"`        // 内存使用量（字节），仅运行中容器有效
+	MemoryPercent float64           `json:"memoryPercent"`      // 内存使用率（百分比），仅运行中容器有效
+	IsSwarm       bool              `json:"isSwarm,omitempty"`  // 是否为 Swarm 管理的容器
+	IsSelf        bool              `json:"isSelf,omitempty"`   // 是否为当前服务容器
+	Labels        map[string]string `json:"labels,omitempty"`   // 容器标签
 }
 
 // ContainerList 列出容器。
+// stats 为 true 时并发补充运行中容器的 CPU/内存用量；
 // filterJSON 为 Docker 原生 filters 的 JSON 编码（如 {"health":["unhealthy"]}），为空时不过滤。
-func (s *Service) ContainerList(ctx context.Context, all bool, filterJSON ...string) ([]*ContainerInfo, error) {
+func (s *Service) ContainerList(ctx context.Context, all, stats bool, filterJSON ...string) ([]*ContainerInfo, error) {
 	list, err := s.docker.ContainerList(ctx, all, filterJSON...)
 	if err != nil {
 		return nil, fmt.Errorf("获取容器列表失败: %w", err)
@@ -77,6 +86,9 @@ func (s *Service) ContainerList(ctx context.Context, all bool, filterJSON ...str
 			IsSelf:   selfID != "" && ct.ID == selfID,
 			Labels:   ct.Labels,
 		})
+	}
+	if stats {
+		s.fillContainerUsage(ctx, result)
 	}
 	return result, nil
 }
@@ -264,9 +276,14 @@ func (s *Service) ContainerStats(ctx context.Context, id string) (*ContainerStat
 	if id == "" {
 		return nil, fmt.Errorf("容器ID不能为空")
 	}
-	stats, top, err := s.docker.ContainerStats(ctx, id)
+	stats, err := s.docker.ContainerStats(ctx, id)
 	if err != nil {
 		return nil, fmt.Errorf("获取容器统计信息失败: %w", err)
+	}
+	// 进程列表依赖容器内的 ps，精简镜像取不到时降级为空
+	top, err := s.docker.ContainerTop(ctx, id)
+	if err != nil {
+		top = nil
 	}
 	return containerStatsResponse(id, stats, top), nil
 }
@@ -497,31 +514,31 @@ func (s *Service) resolveBindSource(containerName, source string) (string, error
 	return bindSource, nil
 }
 
+// fillContainerUsage 并发补充运行中容器的 CPU/内存用量，取不到统计的容器保持零值
+func (s *Service) fillContainerUsage(ctx context.Context, list []*ContainerInfo) {
+	sem := make(chan struct{}, containerStatsConcurrency)
+	var wg sync.WaitGroup
+	for _, info := range list {
+		if info.State != "running" {
+			continue
+		}
+		wg.Add(1)
+		sem <- struct{}{}
+		go func(info *ContainerInfo) {
+			defer wg.Done()
+			defer func() { <-sem }()
+			stats, err := s.docker.ContainerStats(ctx, info.ID)
+			if err != nil {
+				return
+			}
+			_, info.CPUPercent, info.MemoryUsage, info.MemoryPercent = statsUsage(stats)
+		}(info)
+	}
+	wg.Wait()
+}
+
 func containerStatsResponse(id string, v container.StatsResponse, top *container.TopResponse) *ContainerStatsResponse {
-	cpuCores := int(v.CPUStats.OnlineCPUs)
-	if cpuCores == 0 {
-		cpuCores = len(v.CPUStats.CPUUsage.PercpuUsage)
-	}
-	if cpuCores == 0 {
-		cpuCores = 1
-	}
-
-	cpuDelta := float64(v.CPUStats.CPUUsage.TotalUsage - v.PreCPUStats.CPUUsage.TotalUsage)
-	systemDelta := float64(v.CPUStats.SystemUsage - v.PreCPUStats.SystemUsage)
-	var cpuPercent float64
-	if systemDelta > 0 && cpuDelta > 0 {
-		cpuPercent = (cpuDelta / systemDelta) * float64(cpuCores) * 100.0
-	}
-
-	memCache := v.MemoryStats.Stats["inactive_file"]
-	if memCache == 0 {
-		memCache = v.MemoryStats.Stats["cache"]
-	}
-	memoryUsage := v.MemoryStats.Usage - memCache
-	var memoryPercent float64
-	if v.MemoryStats.Limit > 0 {
-		memoryPercent = float64(memoryUsage) / float64(v.MemoryStats.Limit) * 100.0
-	}
+	cpuCores, cpuPercent, memoryUsage, memoryPercent := statsUsage(v)
 
 	var networkRx, networkTx int64
 	networkDetail := make(map[string]*StatsNetDetail)
@@ -573,8 +590,8 @@ func containerStatsResponse(id string, v container.StatsResponse, top *container
 	}
 
 	return &ContainerStatsResponse{
-		ID: id, Name: name, CPUPercent: math.Round(cpuPercent*100) / 100, CPUCores: cpuCores, CPUFreq: math.Round(getCPUFreq()*100) / 100,
-		MemoryUsage: int64(memoryUsage), MemoryLimit: int64(v.MemoryStats.Limit), MemoryPercent: math.Round(memoryPercent*100) / 100,
+		ID: id, Name: name, CPUPercent: cpuPercent, CPUCores: cpuCores, CPUFreq: math.Round(getCPUFreq()*100) / 100,
+		MemoryUsage: memoryUsage, MemoryLimit: int64(v.MemoryStats.Limit), MemoryPercent: memoryPercent,
 		NetworkRx: networkRx, NetworkTx: networkTx, BlockRead: blockRead, BlockWrite: blockWrite,
 		Pids: int64(v.PidsStats.Current), PidsLimit: int64(v.PidsStats.Limit),
 		CPUThrottled:  &CPUThrottledData{Periods: v.CPUStats.ThrottlingData.Periods, ThrottledPeriods: v.CPUStats.ThrottlingData.ThrottledPeriods, ThrottledTime: v.CPUStats.ThrottlingData.ThrottledTime},
@@ -583,6 +600,33 @@ func containerStatsResponse(id string, v container.StatsResponse, top *container
 }
 
 // ─── 辅助函数 ───
+
+// statsUsage 由 Docker 原始统计计算 CPU 使用率（百分比）、内存用量（字节）与内存使用率（百分比）
+func statsUsage(v container.StatsResponse) (cpuCores int, cpuPercent float64, memoryUsage int64, memoryPercent float64) {
+	cpuCores = int(v.CPUStats.OnlineCPUs)
+	if cpuCores == 0 {
+		cpuCores = len(v.CPUStats.CPUUsage.PercpuUsage)
+	}
+	if cpuCores == 0 {
+		cpuCores = 1
+	}
+
+	cpuDelta := float64(v.CPUStats.CPUUsage.TotalUsage - v.PreCPUStats.CPUUsage.TotalUsage)
+	systemDelta := float64(v.CPUStats.SystemUsage - v.PreCPUStats.SystemUsage)
+	if systemDelta > 0 && cpuDelta > 0 {
+		cpuPercent = math.Round((cpuDelta/systemDelta)*float64(cpuCores)*10000) / 100
+	}
+
+	memCache := v.MemoryStats.Stats["inactive_file"]
+	if memCache == 0 {
+		memCache = v.MemoryStats.Stats["cache"]
+	}
+	memoryUsage = int64(v.MemoryStats.Usage - memCache)
+	if v.MemoryStats.Limit > 0 {
+		memoryPercent = math.Round(float64(memoryUsage)/float64(v.MemoryStats.Limit)*10000) / 100
+	}
+	return
+}
 
 func formatPorts(ports []container.Port) []string {
 	seen := make(map[string]bool, len(ports))

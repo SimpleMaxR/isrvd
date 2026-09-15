@@ -13,6 +13,9 @@ isrvd_get "/docker/info"
 ```bash
 isrvd_get "/docker/containers"
 isrvd_get "/docker/containers?all=true"
+# 附带运行中容器的 CPU/内存用量（列表页使用）
+isrvd_get "/docker/containers?stats=true"
+isrvd_get "/docker/containers?all=true&stats=true"
 # Docker 原生 filters 过滤（JSON 编码，需 URL 编码）
 isrvd_get "/docker/containers?filters={\"status\":[\"exited\"]}"
 isrvd_get "/docker/containers?filters={\"health\":[\"unhealthy\"]}"
@@ -25,6 +28,7 @@ isrvd_get "/docker/containers?filters={\"label\":[\"com.docker.compose.project\"
 | 参数 | 类型 | 说明 |
 |------|------|------|
 | all | boolean | 是否包含已停止的容器，默认 `false` |
+| stats | boolean | 是否附带运行中容器的 CPU/内存用量，默认 `false`；开启后按容器并发查询 `stats`，仅 `running` 容器有值。Docker 非流式统计需等待两个采集周期，该参数会使列表响应延迟约 1~2 秒 |
 | filters | string | Docker 原生 filters 的 JSON 编码，如 `{"health":["unhealthy"]}`；支持 `status` / `health` / `name` / `label` / `network` / `volume` / `ancestor` 等 Docker 标准过滤键；格式错误返回 400 |
 
 返回 `ContainerInfo[]`：
@@ -39,6 +43,9 @@ isrvd_get "/docker/containers?filters={\"label\":[\"com.docker.compose.project\"
 | ports | string[] | 端口映射（如 `"0.0.0.0:8080->80/tcp"`） |
 | networks | string[] | 所属网络名 |
 | created | number | 创建时间戳（Unix 秒） |
+| cpuPercent | number | CPU 使用率 (%)；`stats=true` 且容器 `running` 时有效，其余为 `0` |
+| memoryUsage | number | 内存使用（字节）；`stats=true` 且容器 `running` 时有效，其余为 `0` |
+| memoryPercent | number | 内存使用率 (%)；`stats=true` 且容器 `running` 时有效，其余为 `0` |
 | isSwarm | boolean | 是否为 Swarm 管理的容器 |
 | isSelf | boolean | 是否为当前 isrvd 所在容器；用于前端隐藏危险操作 |
 | labels | object | 标签键值对；`com.docker.compose.project` / `com.docker.compose.service` 可用于判断是否属于 Compose 项目 |
