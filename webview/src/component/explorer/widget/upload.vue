@@ -404,10 +404,16 @@ class Upload extends Vue {
         let failCount = 0, cancelCount = 0
 
         const selectedDirs = new Set(nodesForDirs ? this.collectDirs(nodesForDirs) : [])
+        // 正在浏览的目录已经存在，os.Mkdir 会失败。只补拖进来的子目录（含空目录）和重试时的目标目录。
+        const normalizeDir = (path: string) => (!path || path === '/') ? '/' : path.replace(/\/+$/, '')
+        const currentDir = normalizeDir(this.currentPath)
         const dirsToCreate = new Set([
             ...selectedDirs,
             ...files.map(f => f.destDir),
-        ].filter(d => d !== '/'))
+        ].filter(dir => {
+            const normalized = normalizeDir(dir)
+            return normalized !== '/' && normalized !== currentDir
+        }))
         for (const dir of dirsToCreate) {
             if (this.isBatchCancelled(files, nodesForDirs)) {
                 break
