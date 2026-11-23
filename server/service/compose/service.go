@@ -219,18 +219,6 @@ func (s *Service) projectDeploy(ctx context.Context, req DeployRequest, rollback
 	return &DeployResult{ProjectName: projectName, Items: items, InstallDir: installDir}, nil
 }
 
-// prepareRedeployContent 校验新配置并预拉取所需镜像。
-func (s *Service) prepareRedeployContent(ctx context.Context, name, installDir, oldContent string, req RedeployRequest) (string, *types.Project, error) {
-	content, project, err := s.resolveRedeployContent(ctx, name, installDir, oldContent, req)
-	if err != nil {
-		return "", nil, err
-	}
-	if err := s.imagesEnsure(ctx, project, req.ForcePull); err != nil {
-		return "", nil, err
-	}
-	return content, project, nil
-}
-
 // resolveRedeployContent 解析待部署内容并返回项目，供预览与实际部署共用。
 func (s *Service) resolveRedeployContent(ctx context.Context, name, installDir, oldContent string, req RedeployRequest) (string, *types.Project, error) {
 	content := oldContent

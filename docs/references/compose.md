@@ -24,7 +24,7 @@ Docker 不可用时 `/compose/*` 返回 `503`；未配置 `docker.containerRoot`
 | `envContent` | string | 否 | `.env` 内容（`KEY=VALUE`）；省略则保留附加文件解压出的 `.env`（不存在时兜底创建空 `.env`，避免 `env_file` 因缺文件报错），提交则以其为准写盘并合并进变量插值环境 |
 | `initURL` | string | 否 | 附加运行文件 ZIP 下载地址，下载最多等待 5 分钟 |
 | `initFile` | file | 否 | 附加运行文件 zip（仅 multipart）；与 `initURL` 同时提交不会报错，此时只使用 `initFile`，`initURL` 被忽略 |
-| `forcePull` | boolean | 否 | `true` 时强制拉取最新镜像（即使本地已存在），默认 `false`；**仅 JSON 请求生效**，multipart 表单中传入会被忽略 |
+| `forcePull` | boolean | 否 | `true` 时在部署所连接的 Docker Engine 上强制拉取最新镜像，默认 `false`；**仅 JSON 请求生效**，multipart 表单中传入会被忽略 |
 
 > Docker 与 Swarm Compose 部署都支持 `initURL` / `initFile`；解压目标为 `docker.containerRoot/<NAME>/`。Swarm 场景下建议 `containerRoot` 指向各节点共享的存储（如 NFS），以便所有节点都能访问解压出的文件。
 
@@ -55,7 +55,7 @@ Docker 配置中的 `volumes: [/data]` 会创建匿名卷。重部署同一服�
 | `envContent` | string | 按需 | `.env` 内容（`KEY=VALUE`）；省略表示保留现有 `.env`（不存在时兜底创建空 `.env`），提交空字符串表示清空，提交内容表示覆盖 |
 | `serviceName` | string | 按需 | 要更新镜像的 compose 服务名（按服务更新） |
 | `image` | string | 按需 | 新镜像名，`serviceName` 非空时必填 |
-| `forcePull` | boolean | 否 | `true` 时强制拉取最新镜像，默认 `false` |
+| `forcePull` | boolean | 否 | `true` 时在部署所连接的 Docker Engine 上强制拉取最新镜像，默认 `false`；Swarm 更新时也会重新解析镜像标签 |
 
 > 部分更新：未提交的字段保持不变；`content`、`envContent`、`serviceName` 至少提交一项；`serviceName` 与 `content`、`envContent` 互斥，`serviceName` 非空时 `image` 必填。
 
@@ -244,6 +244,8 @@ isrvd_put "/compose/docker/<NAME>" '{"serviceName":"<SERVICE_NAME>","image":"<NE
 ```
 
 ## Swarm Compose
+
+Swarm 首次部署和重部署默认不要求管理节点缓存镜像。管理节点查询镜像摘要并向 Swarm 提交已配置的仓库凭据，实际运行任务的节点按需拉取镜像。显式传入 `forcePull: true` 时仍在管理节点强制预拉取。单机 Compose 始终在运行容器的 Docker Engine 上检查镜像是否可用。
 
 Swarm 服务详情中的「更新状态」直接展示 Docker Engine 返回的更新状态与说明，使用页面已有的「刷新」获取最新结果。服务运行任务数与应用健康状态不能等同，更新请求成功只代表 Docker Engine 接收了操作。
 
