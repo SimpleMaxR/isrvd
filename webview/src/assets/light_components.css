@@ -530,6 +530,119 @@
   }
 
 
+  .resource-page {
+    @apply min-h-[calc(100dvh-4rem)] bg-slate-50;
+  }
+
+  .resource-panel {
+    @apply min-w-0 border-slate-200/70 bg-white p-4 shadow-xs sm:p-5;
+  }
+
+  .resource-section-header {
+    @apply flex min-w-0 flex-wrap items-center justify-between gap-x-4 gap-y-3;
+  }
+
+  .resource-section-heading {
+    @apply flex min-w-0 items-center gap-2.5;
+  }
+
+  .resource-section-title {
+    @apply text-sm font-semibold text-slate-800;
+  }
+
+  .resource-section-icon {
+    @apply bg-primary-50 text-sm text-primary-600;
+  }
+
+  .resource-node {
+    @apply relative min-w-0 rounded-lg border p-3.5;
+  }
+
+  .resource-node-metrics {
+    @apply mt-3 grid grid-cols-3 gap-4 border-t border-slate-200/70 pt-3;
+  }
+
+  .resource-nodes-single .resource-node {
+    @apply col-span-full;
+  }
+
+  @media (min-width: 768px) {
+    .resource-nodes-single .resource-node {
+      @apply grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] items-center gap-x-6;
+    }
+
+    .resource-nodes-single .resource-node-metrics {
+      @apply mt-0 border-t-0 border-l pl-6 pt-0;
+    }
+  }
+
+  .resource-host-muted {
+    @apply text-slate-500;
+  }
+
+  .resource-host-status {
+    @apply flex w-fit items-center gap-2 rounded-lg border border-slate-200/70 bg-slate-50 px-2.5 py-1.5 text-slate-600;
+  }
+
+  .resource-live-dot {
+    @apply bg-emerald-600;
+  }
+
+  .resource-metric-sky    { --metric-color: var(--color-primary-600); }
+  .resource-metric-violet { --metric-color: var(--color-violet-600); }
+  .resource-metric-amber  { --metric-color: var(--color-amber-600); }
+  .resource-metric-teal   { --metric-color: var(--color-teal-600); }
+
+  .resource-panel .stat-card {
+    @apply border-slate-200/70 bg-slate-50/60;
+  }
+
+  .resource-metric-icon {
+    @apply text-sm;
+    color: var(--metric-color);
+    background: color-mix(in srgb, var(--metric-color) 10%, transparent);
+  }
+
+  .resource-metric-value {
+    @apply text-2xl font-semibold leading-tight tracking-tight text-slate-900 tabular-nums;
+  }
+
+  .resource-metric-unit {
+    @apply ml-1 text-xs font-medium tracking-normal text-slate-500;
+  }
+
+  .resource-meter {
+    @apply h-1 overflow-hidden rounded-full bg-slate-200;
+  }
+
+  .resource-meter span {
+    @apply block h-full rounded-full transition-[width] motion-reduce:transition-none;
+    background-color: var(--metric-color);
+  }
+
+  .resource-service-icon {
+    @apply text-sm;
+    color: var(--service-color, var(--color-primary-600));
+    background: var(--service-tint, var(--color-primary-50));
+  }
+
+  .resource-service-label {
+    @apply mb-1 text-xs text-slate-500;
+  }
+
+  .resource-service-value {
+    @apply truncate text-lg font-semibold leading-tight text-slate-800 tabular-nums;
+  }
+
+  .resource-service-apisix { --service-color: var(--color-orange-600); --service-tint: var(--color-orange-50); }
+  .resource-service-caddy  { --service-color: var(--color-indigo-600); --service-tint: var(--color-indigo-50); }
+  .resource-service-docker { --service-color: var(--color-blue-600); --service-tint: var(--color-blue-50); }
+  .resource-service-swarm  { --service-color: var(--color-cyan-600); --service-tint: var(--color-cyan-50); }
+
+  .resource-detail-link {
+    @apply bg-slate-50;
+  }
+
   /* ============================================================
    * 10. 终端页面（Terminal Page）
    * ============================================================ */

@@ -20,17 +20,19 @@ Docker 不可用时 `/compose/*` 返回 `503`；未配置 `docker.containerRoot`
 
 | 字段 | 类型 | 必填 | 说明 |
 |---|---|---|---|
-| `content` | string | 是 | 完整 compose yaml 文本 |
+| `content` | string | 是 | 完整 compose yaml 文本，顶层必须有非空 `name` |
 | `envContent` | string | 否 | `.env` 内容（`KEY=VALUE`）；省略则保留附加文件解压出的 `.env`（不存在时兜底创建空 `.env`，避免 `env_file` 因缺文件报错），提交则以其为准写盘并合并进变量插值环境 |
 | `initURL` | string | 否 | 附加运行文件 ZIP 下载地址，下载最多等待 5 分钟 |
 | `initFile` | file | 否 | 附加运行文件 zip（仅 multipart）；与 `initURL` 同时提交不会报错，此时只使用 `initFile`，`initURL` 被忽略 |
-| `forcePull` | boolean | 否 | `true` 时在部署所连接的 Docker Engine 上强制拉取最新镜像，默认 `false`；**仅 JSON 请求生效**，multipart 表单中传入会被忽略 |
+| `forcePull` | boolean | 否 | 单机 Docker 设为 `true` 时强制拉取最新镜像，默认 `false`，仅 JSON 请求生效。Swarm 首次部署总会查询镜像摘要，此字段对其无影响 |
 
 > Docker 与 Swarm Compose 部署都支持 `initURL` / `initFile`；解压目标为 `docker.containerRoot/<NAME>/`。Swarm 场景下建议 `containerRoot` 指向各节点共享的存储（如 NFS），以便所有节点都能访问解压出的文件。
 
 `.env` 提交约定：省略 `envContent` 保留附加文件或现有 `.env`；提交精确内容则覆盖；提交空字符串则清空。
 
-部署前先做不读取 `env_file` 的结构预检并从中取得项目名（已插值并按 compose-go 规则规范化为小写）；完全未声明 `name` 时用 compose 内容短哈希兜底；若声明了 `name` 但其插值变量未提供，部署直接报错而不会退回哈希。
+Docker 和 Swarm 的部署、重部署均保留现有 `.env` 的权限，Unix 系统上也保留所有者和所属组。新建 `.env` 使用 `0644`，实际权限受 iSrvd 进程的 `umask` 限制。
+
+新建和重部署均要求 Compose 顶层显式提供非空 `name`，不接受缺失、`null`、空字符串或纯空白。项目名按 compose-go 规则插值并规范化；插值结果为空时拒绝。重部署时项目名必须与当前项目一致。
 
 部署前的冲突校验（任一命中即报错）：
 
@@ -41,7 +43,7 @@ Docker 不可用时 `/compose/*` 返回 `503`；未配置 `docker.containerRoot`
 
 附加 ZIP 的归档大小和解压总量分别限制为 512 MiB。附加文件与现有文件重名时拒绝部署，`compose.yml` 由请求中的 Compose 配置生成。请求取消会中止附加文件下载和解压。部署失败时清理本次新建的文件与空目录，并恢复原 `.env`。
 
-Docker 和 Swarm 会检查 `external: true` 的网络是否存在。部署失败后尝试清理本次确认新建的网络，网络仍有连接或清理失败时报告错误。
+Docker 和 Swarm 仅检查启用服务实际引用的网络及具名 `network_mode`；这些引用中的 `external: true` 网络必须已存在。未使用或仅禁用 profile 引用的顶层网络不检查、不创建。部署失败后尝试清理本次确认新建的网络，网络仍有连接或清理失败时报告错误。
 
 状态码：`400` 为 JSON/表单解析失败、`content` 为空、请求体超过 `server.maxUploadSize`、路径参数 `:name` 非法；其余错误（含项目名非法、冲突校验、重部署参数校验、部署忙碌）返回 `500`。
 
@@ -51,11 +53,11 @@ Docker 配置中的 `volumes: [/data]` 会创建匿名卷。重部署同一服�
 
 | 字段 | 类型 | 必填 | 说明 |
 |---|---|---|---|
-| `content` | string | 按需 | 完整 compose yaml 文本；省略表示沿用现有 compose.yml，提交空字符串会被拒绝 |
+| `content` | string | 按需 | 完整 compose yaml 文本；省略表示沿用现有 compose.yml，提交空字符串会被拒绝；最终配置必须包含与当前项目一致的 `name` |
 | `envContent` | string | 按需 | `.env` 内容（`KEY=VALUE`）；省略表示保留现有 `.env`（不存在时兜底创建空 `.env`），提交空字符串表示清空，提交内容表示覆盖 |
 | `serviceName` | string | 按需 | 要更新镜像的 compose 服务名（按服务更新） |
 | `image` | string | 按需 | 新镜像名，`serviceName` 非空时必填 |
-| `forcePull` | boolean | 否 | `true` 时在部署所连接的 Docker Engine 上强制拉取最新镜像，默认 `false`；Swarm 更新时也会重新解析镜像标签 |
+| `forcePull` | boolean | 否 | 默认 `false`。设为 `true` 时，单机 Docker 强制拉取最新镜像，Swarm 重新解析镜像标签，摘要变化可触发滚动更新 |
 
 > 部分更新：未提交的字段保持不变；`content`、`envContent`、`serviceName` 至少提交一项；`serviceName` 与 `content`、`envContent` 互斥，`serviceName` 非空时 `image` 必填。
 
@@ -245,7 +247,7 @@ isrvd_put "/compose/docker/<NAME>" '{"serviceName":"<SERVICE_NAME>","image":"<NE
 
 ## Swarm Compose
 
-Swarm 首次部署和重部署默认不要求管理节点缓存镜像。管理节点查询镜像摘要并向 Swarm 提交已配置的仓库凭据，实际运行任务的节点按需拉取镜像。显式传入 `forcePull: true` 时仍在管理节点强制预拉取。单机 Compose 始终在运行容器的 Docker Engine 上检查镜像是否可用。
+Swarm Compose 创建或更新服务时由 manager 查询仓库中的镜像摘要，运行任务的节点按需下载镜像层。镜像摘要查询失败时，Docker 可能继续使用原镜像引用。节点上的拉取错误可在 Swarm 任务状态中查看。私有仓库沿用现有的认证规则。[Swarm 服务 API](swarm/services.md)
 
 Swarm 服务详情中的「更新状态」直接展示 Docker Engine 返回的更新状态与说明，使用页面已有的「刷新」获取最新结果。服务运行任务数与应用健康状态不能等同，更新请求成功只代表 Docker Engine 接收了操作。
 

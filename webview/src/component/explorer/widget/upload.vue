@@ -403,12 +403,11 @@ class Upload extends Vue {
     private async doUploadFiles(files: UploadFileNode[], nodesForDirs?: UploadNode[]) {
         let failCount = 0, cancelCount = 0
 
-        const selectedDirs = new Set(nodesForDirs ? this.collectDirs(nodesForDirs) : [])
-        // 正在浏览的目录已经存在，os.Mkdir 会失败。只补拖进来的子目录（含空目录）和重试时的目标目录。
-        const normalizeDir = (path: string) => (!path || path === '/') ? '/' : path.replace(/\/+$/, '')
+        // 当前目录已经存在，重复创建会触发请求错误。
+        const normalizeDir = (path: string) => path.replace(/\/+$/, '') || '/'
         const currentDir = normalizeDir(this.currentPath)
         const dirsToCreate = new Set([
-            ...selectedDirs,
+            ...(nodesForDirs ? this.collectDirs(nodesForDirs) : []),
             ...files.map(f => f.destDir),
         ].filter(dir => {
             const normalized = normalizeDir(dir)
@@ -421,9 +420,7 @@ class Upload extends Vue {
             try {
                 await this.adapter.mkdir(dir)
             } catch {
-                if (this.sessionActive && selectedDirs.has(dir)) {
-                    this.portal.showNotification('error', this.$t('无法创建目录 {0}', dir))
-                }
+                // 统一请求层已通知；目录可能已存在，继续尝试文件上传。
             }
         }
 

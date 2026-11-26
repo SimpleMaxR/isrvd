@@ -46,11 +46,6 @@ func (s *Service) SwarmDeploy(ctx context.Context, req DeployRequest) (*DeployRe
 				return nil, err
 			}
 		}
-		if req.ForcePull {
-			if err := s.imagesEnsure(ctx, project, true); err != nil {
-				return nil, err
-			}
-		}
 		return s.swarmServicesCreate(ctx, project)
 	})
 	if err == nil {
@@ -165,11 +160,6 @@ func (s *Service) SwarmRedeploy(ctx context.Context, name string, req RedeployRe
 	content, project, err := s.resolveRedeployContent(ctx, name, installDir, oldContent, req)
 	if err != nil {
 		return nil, err
-	}
-	if req.ForcePull {
-		if err := s.imagesEnsure(ctx, project, true); err != nil {
-			return nil, err
-		}
 	}
 	if err := s.historyBegin("swarm", name, currentConfig); err != nil {
 		return nil, err
