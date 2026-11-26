@@ -116,7 +116,7 @@ func (s *Service) CheckAvailability(ctx context.Context) bool {
 	return err == nil
 }
 
-// imagesEnsure 预拉取单机 Compose 项目的镜像，避免删除旧容器后才发现镜像不可用。
+// imagesEnsure 预拉取 project 中所有 service 的镜像，避免删除旧实例后才发现镜像不可用。
 // forcePull 为 true 时，无论本地是否存在都重新拉取。
 func (s *Service) imagesEnsure(ctx context.Context, project *types.Project, forcePull bool) error {
 	for _, svc := range project.Services {
